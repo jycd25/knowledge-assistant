@@ -1,0 +1,112 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Completely ignore data and app/data directories
+data/
+app/data/
+app/saved_templates/
+app/notes/
+
+# But keep specific .gitkeep files
+!data/uploads/
+data/uploads/*
+!data/uploads/.gitkeep
+
+!data/templates/
+data/templates/*
+!data/templates/.gitkeep
+
+# Completely ignore user_data directory except for .gitkeep
+user_data/
+!user_data/.gitkeep
+
+debug/*
+!debug/.gitkeep
+notes/*
+!notes/.gitkeep
+debug_last_prompt.txt
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Local development
+.devcontainer/
+.streamlit/
+.vscode.example/
+
+# Debug and Test files
+*debug*
+*test*
+*DEBUG*
+*TEST*
+pytest_cache/
+.pytest_cache/
+coverage/
+.coverage
+htmlcov/
+
+
+
+# Tools
+tools/llm_api.py
+tools/search_engine.py
+tools/web_scraper.py
+tools/screenshot_utils.py
+
+# README
+README_devin.cursorrules.md
+
+# LanceDB files
+**/lancedb/
+data/lancedb/
+*.lance
+.lancedb/

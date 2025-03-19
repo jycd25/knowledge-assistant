@@ -1,0 +1,27 @@
+# User dependencies for Knowledge Assistant core functionality
+
+# LLM integration (choose the one you're using)
+openai>=1.0.0
+python-dotenv>=1.0.0   # For API key management
+
+# Web Interface
+streamlit>=1.31.0     # Web-based GUI
+
+# PDF processing
+docling>=0.5.0        # For PDF processing
+
+# Vector database
+lancedb>=0.3.0        # Vector database
+tiktoken>=0.5.0       # Token counting for OpenAI embeddings
+pyarrow>=14.0.0       # Required by LanceDB
+
+# Data processing
+pandas>=2.0.0         # Data manipulation
+numpy>=1.24.0         # Numerical operations
+pydantic>=2.0.0       # Data validation
+
+# HTTP
+requests>=2.31.0      # Basic HTTP client
+
+# Natural language processing
+nltk>=3.8.1           # For tokenization, stopwords, etc. 
