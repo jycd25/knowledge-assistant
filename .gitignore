@@ -1,0 +1,24 @@
+# python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# app data
+data/
+user_data/
+.env
+
+# personal notes, never committed
+private/
+
+# editors / os
+.vscode/
+.idea/
+.DS_Store
+
+# personal notes, never committed
+private/
