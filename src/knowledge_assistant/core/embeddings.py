@@ -7,6 +7,9 @@ rows permanently unsearchable with no error surfaced.
 
 from __future__ import annotations
 
+import hashlib
+import math
+import re
 from typing import Protocol
 
 
@@ -39,3 +42,23 @@ class FastEmbedEmbedder:
     def embed_query(self, text: str) -> list[float]:
         return self.embed([text])[0]
 
+
+class HashEmbedder:
+    """Deterministic, dependency-free embedder for tests. Similar words -> similar vectors."""
+
+    def __init__(self, dim: int = 384):
+        self.dim = dim
+
+    def _one(self, text: str) -> list[float]:
+        vec = [0.0] * self.dim
+        for tok in re.findall(r"[a-z0-9]+", text.lower()):
+            h = int.from_bytes(hashlib.blake2b(tok.encode(), digest_size=8).digest(), "big")
+            vec[h % self.dim] += 1.0
+        norm = math.sqrt(sum(x * x for x in vec)) or 1.0
+        return [x / norm for x in vec]
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        return [self._one(t) for t in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._one(text)
