@@ -57,7 +57,7 @@ def chunk_text(text: str, max_tokens: int = 512, overlap_tokens: int = 64) -> li
     current: list[str] = []
     current_tokens = 0
     for unit in units:
-        ut = estimate_tokens(unit)
+        ut = estimate_tokens(unit) + 1  # +1 for the joining space; keeps the joined chunk under budget
         if current and current_tokens + ut > max_tokens:
             body = " ".join(current)
             chunks.append(TextChunk(len(chunks), body, estimate_tokens(body)))
@@ -65,7 +65,7 @@ def chunk_text(text: str, max_tokens: int = 512, overlap_tokens: int = 64) -> li
             carried: list[str] = []
             carried_tokens = 0
             for prev in reversed(current):
-                pt = estimate_tokens(prev)
+                pt = estimate_tokens(prev) + 1
                 if carried_tokens + pt > overlap_tokens:
                     break
                 carried.insert(0, prev)
