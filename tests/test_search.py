@@ -11,7 +11,8 @@ def _seed(session, embedder):
 
 def test_hybrid_finds_keyword_and_vector_matches(session, embedder):
     _seed(session, embedder)
-    hits = HybridSearch(session, embedder).search("spacetime gravity")
+    # the hash embedder is not calibrated like bge; loosen the cutoff so this tests fusion only
+    hits = HybridSearch(session, embedder).search("spacetime gravity", max_distance=1.0)
     titles = [h.entry_title for h in hits]
     assert titles[0] == "Relativity"
     assert "Bread" not in titles[:2]
