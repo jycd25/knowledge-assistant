@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
 
+    # cosine-distance cutoff for vector candidates; calibrated for bge-small (see core/search.py)
+    search_max_distance: float = 0.45
+
     chunk_tokens: int = 512
     chunk_overlap_tokens: int = 64
 

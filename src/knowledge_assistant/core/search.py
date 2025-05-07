@@ -16,6 +16,9 @@ from sqlite_vec import serialize_float32
 from .embeddings import Embedder
 
 RRF_K = 60
+# Cosine distance (0 = identical). Measured with bge-small-en-v1.5: on-topic queries score
+# 0.22-0.46, off-topic 0.48-0.58, so 0.45 sits in the gap. Other models need re-measuring.
+DEFAULT_MAX_DISTANCE = 0.45
 
 
 @dataclass
@@ -51,7 +54,8 @@ class HybridSearch:
             return "AND e.topic_id IN (SELECT id FROM topics WHERE category_id = :category_id)", params
         return "", params
 
-    def vector_ranks(self, query: str, k: int, category_id=None, topic_id=None) -> list[str]:
+    def vector_ranks(self, query: str, k: int, category_id=None, topic_id=None,
+                     max_distance: float = DEFAULT_MAX_DISTANCE) -> list[str]:
         scope, params = self._scope_sql(category_id, topic_id)
         # KNN first (vec0 needs the k constraint on its own), then scope-filter the candidates.
         # Over-fetch so filtering still leaves ~k results.
@@ -62,12 +66,12 @@ class HybridSearch:
             ) v
             JOIN chunks c ON c.id = v.chunk_id
             JOIN entries e ON e.id = c.entry_id
-            WHERE 1=1 {scope}
+            WHERE v.distance <= :maxd {scope}
             ORDER BY v.distance
             LIMIT :k
         """
         qvec = serialize_float32(self.embedder.embed_query(query))
-        rows = self.s.execute(text(sql), {"qvec": qvec, "kk": k * 4, "k": k, **params})
+        rows = self.s.execute(text(sql), {"qvec": qvec, "kk": k * 4, "k": k, "maxd": max_distance, **params})
         return [r[0] for r in rows]
 
     def keyword_ranks(self, query: str, k: int, category_id=None, topic_id=None) -> list[str]:
@@ -84,12 +88,13 @@ class HybridSearch:
         return [r[0] for r in rows]
 
     def search(self, query: str, limit: int = 10, category_id: str | None = None,
-               topic_id: str | None = None, mode: str = "hybrid") -> list[SearchHit]:
+               topic_id: str | None = None, mode: str = "hybrid",
+               max_distance: float = DEFAULT_MAX_DISTANCE) -> list[SearchHit]:
         query = query.strip()
         if not query:
             return []
         fetch = max(limit * 3, 20)
-        vec = self.vector_ranks(query, fetch, category_id, topic_id) if mode in ("hybrid", "vector") else []
+        vec = self.vector_ranks(query, fetch, category_id, topic_id, max_distance) if mode in ("hybrid", "vector") else []
         kw = self.keyword_ranks(query, fetch, category_id, topic_id) if mode in ("hybrid", "keyword") else []
 
         scores: dict[str, float] = {}
