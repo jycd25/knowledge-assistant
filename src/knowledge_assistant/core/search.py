@@ -31,7 +31,9 @@ class SearchHit:
 
 
 def _fts_query(q: str) -> str:
-    return " OR ".join(q.split())
+    # FTS5 treats punctuation as syntax; quote each term so user text can't break the query
+    terms = [t.replace('"', '""') for t in q.split() if t.strip()]
+    return " OR ".join(f'"{t}"' for t in terms) if terms else '""'
 
 
 class HybridSearch:
