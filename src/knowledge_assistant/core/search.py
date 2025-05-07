@@ -99,7 +99,11 @@ class HybridSearch:
             scores[cid] = scores.get(cid, 0.0) + 1.0 / (RRF_K + r)
         for cid, r in krank.items():
             scores[cid] = scores.get(cid, 0.0) + 1.0 / (RRF_K + r)
-        top = sorted(scores.items(), key=lambda kv: -kv[1])[:limit]
+        # fused score first; on ties prefer the better keyword rank (exact term matches are
+        # the more precise signal), then the better vector rank
+        inf = float("inf")
+        top = sorted(scores.items(),
+                     key=lambda kv: (-kv[1], krank.get(kv[0], inf), vrank.get(kv[0], inf)))[:limit]
         if not top:
             return []
 
