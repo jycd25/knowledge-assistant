@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import webbrowser
 from pathlib import Path
 
 import typer
@@ -23,6 +24,24 @@ def _log(verbose: bool) -> None:
 @app.command()
 def version() -> None:
     typer.echo(__version__)
+
+
+@app.command()
+def serve(host: str | None = None, port: int | None = None, open_browser: bool = typer.Option(False, "--open"),
+          verbose: bool = False) -> None:
+    """Start the API + worker + web UI."""
+    import uvicorn
+
+    from .api.app import create_app
+    from .container import Container
+
+    _log(verbose)
+    settings = get_settings()
+    host, port = host or settings.host, port or settings.port
+    container = Container.build(settings)
+    if open_browser:
+        webbrowser.open(f"http://{host}:{port}")
+    uvicorn.run(create_app(container), host=host, port=port, log_level="debug" if verbose else "info")
 
 
 @app.command()
