@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+/* Design tokens: archival folder stock, ink, one library-green accent. */
+@theme {
+  --color-paper: #f3f5f4;
+  --color-card: #ffffff;
+  --color-ink: #16211f;
+  --color-ink-soft: #3f4b48;
+  --color-muted: #6b7572;
+  --color-line: #d9dedc;
+  --color-line-strong: #b9c2bf;
+  --color-accent: #1f5f4a;
+  --color-accent-ink: #14473a;
+  --color-accent-wash: #e4efea;
+  --color-stamp: #b8452f;
+  --color-stamp-wash: #f7e7e2;
+  --color-highlight: #fff4c2;
+
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-card: 6px;
+}
+
+html { color-scheme: light; }
+body { @apply bg-paper text-ink font-sans antialiased; }
+
+h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+/* form controls */
+.field {
+  @apply w-full rounded-card border border-line bg-card px-3 py-2 text-[15px] text-ink placeholder:text-muted
+         focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20;
+}
+@utility btn {
+  @apply inline-flex items-center gap-2 rounded-card px-3.5 py-2 text-sm font-medium transition-colors
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50;
+}
+.btn-primary { @apply btn bg-accent text-white hover:bg-accent-ink; }
+.btn-quiet { @apply btn border border-line bg-card text-ink-soft hover:border-line-strong hover:text-ink; }
+.btn-danger { @apply btn text-stamp hover:bg-stamp-wash; }
+
+.card { @apply rounded-card border border-line bg-card; }
+.eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.12em] text-muted; }
