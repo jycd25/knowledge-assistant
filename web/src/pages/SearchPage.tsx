@@ -59,6 +59,7 @@ export default function SearchPage() {
         </div>
         <div className="flex gap-2">
           <textarea autoFocus rows={2} value={q} onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(e); } }}
             placeholder={tab === "ask" ? "What does my library say about…" : "Words or phrases to look for"}
             className="field display resize-none text-[18px] font-medium" />
           {asking
