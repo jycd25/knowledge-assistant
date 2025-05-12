@@ -19,6 +19,7 @@ export default function SearchPage() {
   const [sources, setSources] = useState<SearchHit[]>([]);
   const [asking, setAsking] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
+  const [active, setActive] = useState<number | null>(null);
   const abort = useRef<AbortController | null>(null);
 
   const find = useMutation({ mutationFn: () => api.search({ query: q, mode, limit: 15 }) });
@@ -27,7 +28,7 @@ export default function SearchPage() {
     abort.current?.abort();
     const ctl = new AbortController();
     abort.current = ctl;
-    setAnswer(""); setSources([]); setAskError(null); setAsking(true);
+    setAnswer(""); setSources([]); setAskError(null); setActive(null); setAsking(true);
     try {
       for await (const ev of await askStream({ question: q }, ctl.signal)) {
         if (ev.event === "sources") setSources(ev.data as SearchHit[]);
@@ -85,7 +86,7 @@ export default function SearchPage() {
             {(answer || asking) && (
               <article className="card p-5">
                 <div className="eyebrow mb-3">answer{asking ? " · writing…" : ""}</div>
-                <div className="prose-answer text-[15px]"><ReactMarkdown>{answer}</ReactMarkdown></div>
+                <Answer text={answer} active={active} onHover={setActive} />
               </article>
             )}
           </div>
@@ -93,7 +94,8 @@ export default function SearchPage() {
             {sources.length > 0 && <div className="eyebrow mb-2">sources</div>}
             <ol className="flex flex-col gap-2">
               {sources.map((s, i) => (
-                <li key={s.chunk_id} className="card p-3">
+                <li key={s.chunk_id} data-active={active === i + 1} className="source-card card p-3"
+                  onMouseEnter={() => setActive(i + 1)} onMouseLeave={() => setActive(null)}>
                   <div className="mb-1 flex items-baseline justify-between gap-2">
                     <span className="cite">[{i + 1}]</span>
                     <Link to={`/library/${s.entry_id}`} className="truncate text-[14px] font-medium hover:underline">{s.entry_title}</Link>
@@ -125,4 +127,29 @@ export default function SearchPage() {
       )}
     </div>
   );
+}
+
+/** Renders markdown and turns [n] citations into hoverable links to the source cards. */
+function Answer({ text, active, onHover }: { text: string; active: number | null; onHover: (n: number | null) => void }) {
+  // Insert a marker that survives markdown so we can swap it for a <span> afterwards.
+  const marked = text.replace(/\[(\d+)\]/g, (_, n) => `⟦${n}⟧`);
+  return (
+    <div className="prose-answer text-[15px]">
+      <ReactMarkdown components={{
+        p: ({ children }) => <p>{cite(children, active, onHover)}</p>,
+        li: ({ children }) => <li>{cite(children, active, onHover)}</li>,
+      }}>{marked}</ReactMarkdown>
+    </div>
+  );
+}
+
+function cite(children: React.ReactNode, active: number | null, onHover: (n: number | null) => void): React.ReactNode {
+  const walk = (node: React.ReactNode): React.ReactNode => {
+    if (typeof node !== "string") return Array.isArray(node) ? node.map(walk) : node;
+    const parts = node.split(/⟦(\d+)⟧/);
+    return parts.map((p, i) => i % 2 === 0 ? p : (
+      <span key={i} className="cite" data-active={active === Number(p)} onMouseEnter={() => onHover(Number(p))} onMouseLeave={() => onHover(null)}>[{p}]</span>
+    ));
+  };
+  return walk(children);
 }
