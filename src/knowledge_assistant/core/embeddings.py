@@ -40,7 +40,8 @@ class FastEmbedEmbedder:
         return out
 
     def embed_query(self, text: str) -> list[float]:
-        return self.embed([text])[0]
+        # bge models are trained with a query instruction prefix
+        return [v.tolist() for v in self._model.query_embed(text)][0]
 
 
 class HashEmbedder:
