@@ -44,3 +44,16 @@ h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: -0.01em
 
 .card { @apply rounded-card border border-line bg-card; }
 .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.12em] text-muted; }
+
+/* streamed answer prose */
+.prose-answer :is(p, li) { @apply leading-relaxed; }
+.prose-answer p + p { @apply mt-3; }
+.prose-answer :is(ul, ol) { @apply my-3 pl-5; }
+.prose-answer ul { list-style: disc; }
+.prose-answer ol { list-style: decimal; }
+.prose-answer :is(h1, h2, h3) { @apply mt-5 mb-2 font-semibold; }
+.prose-answer code { @apply rounded bg-paper px-1 font-mono text-[0.9em]; }
+.cite { @apply inline-block cursor-pointer rounded-sm bg-accent-wash px-1 font-mono text-[12px] font-medium text-accent-ink align-baseline; }
+.cite[data-active="true"], .source-card[data-active="true"] { @apply bg-highlight; }
+.source-card { @apply transition-colors; }
+
