@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     chunk_tokens: int = 512
     chunk_overlap_tokens: int = 64
 
+    worker_threads: int = 2
+    job_max_attempts: int = 3
+
     @property
     def db_path(self) -> Path:
         return self.data_dir / "knowledge.db"
