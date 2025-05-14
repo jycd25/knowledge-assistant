@@ -46,23 +46,24 @@ def serve(host: str | None = None, port: int | None = None, open_browser: bool =
 
 @app.command()
 def ingest(path: Path, title: str | None = None, topic_id: str | None = None, verbose: bool = False) -> None:
-    """Ingest a PDF or text/markdown file."""
+    """Ingest a PDF or text/markdown file synchronously (no server needed)."""
     from .container import Container
-    from .core.repositories import EntryRepository
 
     _log(verbose)
     settings = get_settings()
     c = Container.build(settings)
     if path.suffix.lower() == ".pdf":
-        from .jobs.pdf_extract import extract_in_subprocess
-
-        content, source = extract_in_subprocess(path), "pdf"
+        dest = settings.uploads_dir / path.name
+        shutil.copy(path, dest)
+        jid = c.queue.enqueue("ingest_pdf", {"path": str(dest), "title": title or path.stem, "topic_id": topic_id})
     else:
-        content, source = path.read_text(encoding="utf-8"), "manual"
-    with c.session_factory() as s, s.begin():
-        repo = EntryRepository(s, c.embedder, settings.chunk_tokens, settings.chunk_overlap_tokens)
-        e = repo.create(title=title or path.stem, content=content, topic_id=topic_id, source=source)
-        typer.echo(f"ingested {path.name}: entry {e.id} ({len(e.chunks)} chunks)")
+        jid = c.queue.enqueue("ingest_text", {"title": title or path.stem, "content": path.read_text(encoding="utf-8"), "topic_id": topic_id})
+    c.worker.run_one()
+    job = c.queue.get(jid)
+    if job.status != "done":
+        typer.secho(f"failed: {job.error}", fg="red")
+        raise typer.Exit(1)
+    typer.echo(f"ingested {path.name}: entry {job.result['entry_id']} ({job.result['chunks']} chunks)")
 
 
 @app.command()

@@ -1,4 +1,4 @@
-"""Composition root: builds every long-lived object once and hands them to the CLI (and the API later)."""
+"""Composition root: builds every long-lived object once and hands them to the API and CLI."""
 
 from __future__ import annotations
 
@@ -12,6 +12,8 @@ from .config import Settings
 from .core.db import init_schema, make_engine, make_session_factory
 from .core.embeddings import Embedder, FastEmbedEmbedder
 from .core.llm import LLMProvider, make_provider
+from .jobs import JobQueue, Worker
+from .jobs.handlers import Handlers
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +25,8 @@ class Container:
     session_factory: sessionmaker[Session]
     embedder: Embedder
     llm: LLMProvider
+    queue: JobQueue
+    worker: Worker
 
     @classmethod
     def build(cls, settings: Settings, embedder: Embedder | None = None, llm: LLMProvider | None = None) -> "Container":
@@ -34,10 +38,16 @@ class Container:
             embedder = FastEmbedEmbedder(settings.embedding_model, settings.embedding_dim,
                                          cache_dir=str(settings.data_dir / "models"))
         llm = llm or make_provider(settings)
-        return cls(settings, engine, sf, embedder, llm)
+        queue = JobQueue(sf, max_attempts=settings.job_max_attempts)
+        worker = Worker(queue, threads=settings.worker_threads)
+        h = Handlers(sf, embedder, settings.chunk_tokens, settings.chunk_overlap_tokens)
+        worker.register("ingest_text", h.ingest_text)
+        worker.register("ingest_pdf", h.ingest_pdf)
+        worker.register("reindex_entry", h.reindex_entry)
+        return cls(settings, engine, sf, embedder, llm, queue, worker)
 
     def start(self) -> None:
-        pass
+        self.worker.start()
 
     def stop(self) -> None:
-        pass
+        self.worker.stop()
