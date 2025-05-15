@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from ..container import Container
 from ..core.errors import ConflictError, NotFoundError
 from ..core.llm import LLMUnavailable
-from .routers import entries, search
+from .routers import catalog, entries, search
 
 log = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -33,7 +33,7 @@ def create_app(container: Container, serve_static: bool = True) -> FastAPI:
     app.state.container = container
 
     api = FastAPI(title="Knowledge Assistant API")
-    for r in (entries.router, search.router):
+    for r in (catalog.router, entries.router, search.router):
         api.include_router(r)
 
     @api.exception_handler(NotFoundError)

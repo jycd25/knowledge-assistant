@@ -7,6 +7,44 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class CategoryIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str = ""
+
+
+class CategoryPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+
+
+class CategoryOut(BaseModel):
+    id: str
+    name: str
+    description: str
+    created_at: datetime
+    topic_count: int = 0
+
+
+class TopicIn(BaseModel):
+    category_id: str
+    name: str = Field(min_length=1, max_length=200)
+    description: str = ""
+
+
+class TopicPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+
+
+class TopicOut(BaseModel):
+    id: str
+    category_id: str
+    name: str
+    description: str
+    created_at: datetime
+    entry_count: int = 0
+
+
 class EntryIn(BaseModel):
     title: str = Field(min_length=1, max_length=500)
     content: str = Field(min_length=1)
