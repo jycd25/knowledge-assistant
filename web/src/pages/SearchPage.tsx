@@ -5,13 +5,15 @@ import ReactMarkdown from "react-markdown";
 import { CornerDownLeft, Square } from "lucide-react";
 import { api, askStream } from "../lib/api";
 import type { SearchHit, SearchMode } from "../lib/types";
-import { ErrorNote, Empty } from "../components/ui";
+import { ErrorNote, Empty, ScopePicker } from "../components/ui";
 
 type Tab = "ask" | "find";
 
 export default function SearchPage() {
   const [tab, setTab] = useState<Tab>("ask");
   const [q, setQ] = useState("");
+  const [cat, setCat] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string | null>(null);
   const [mode, setMode] = useState<SearchMode>("hybrid");
 
   // ask state
@@ -22,7 +24,7 @@ export default function SearchPage() {
   const [active, setActive] = useState<number | null>(null);
   const abort = useRef<AbortController | null>(null);
 
-  const find = useMutation({ mutationFn: () => api.search({ query: q, mode, limit: 15 }) });
+  const find = useMutation({ mutationFn: () => api.search({ query: q, category_id: cat, topic_id: topic, mode, limit: 15 }) });
 
   async function ask() {
     abort.current?.abort();
@@ -30,7 +32,7 @@ export default function SearchPage() {
     abort.current = ctl;
     setAnswer(""); setSources([]); setAskError(null); setActive(null); setAsking(true);
     try {
-      for await (const ev of await askStream({ question: q }, ctl.signal)) {
+      for await (const ev of await askStream({ question: q, category_id: cat, topic_id: topic }, ctl.signal)) {
         if (ev.event === "sources") setSources(ev.data as SearchHit[]);
         else if (ev.event === "token") setAnswer((a) => a + (ev.data as string));
         else if (ev.event === "error") setAskError((ev.data as { message: string }).message);
@@ -68,6 +70,7 @@ export default function SearchPage() {
             : <button type="submit" className="btn-primary self-end" disabled={!q.trim()}><CornerDownLeft size={14} />{tab === "ask" ? "Ask" : "Find"}</button>}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          <ScopePicker categoryId={cat} topicId={topic} onChange={(c, t) => { setCat(c); setTopic(t); }} />
           {tab === "find" && (
             <select className="field w-auto" value={mode} onChange={(e) => setMode(e.target.value as SearchMode)}>
               <option value="hybrid">Meaning + keywords</option>

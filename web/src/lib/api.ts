@@ -18,6 +18,16 @@ async function request<R>(path: string, init: RequestInit = {}): Promise<R> {
 const json = (body: unknown) => JSON.stringify(body);
 
 export const api = {
+  categories: () => request<T.Category[]>("/categories"),
+  createCategory: (b: { name: string; description?: string }) => request<T.Category>("/categories", { method: "POST", body: json(b) }),
+  updateCategory: (id: string, b: { name?: string; description?: string }) => request<T.Category>(`/categories/${id}`, { method: "PATCH", body: json(b) }),
+  deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
+
+  topics: (categoryId?: string) => request<T.Topic[]>(`/topics${categoryId ? `?category_id=${categoryId}` : ""}`),
+  createTopic: (b: { category_id: string; name: string; description?: string }) => request<T.Topic>("/topics", { method: "POST", body: json(b) }),
+  updateTopic: (id: string, b: { name?: string; description?: string }) => request<T.Topic>(`/topics/${id}`, { method: "PATCH", body: json(b) }),
+  deleteTopic: (id: string) => request<void>(`/topics/${id}`, { method: "DELETE" }),
+
   entries: (q: { topic_id?: string; category_id?: string } = {}) => {
     const p = new URLSearchParams(Object.entries(q).filter(([, v]) => v) as [string, string][]);
     return request<T.EntrySummary[]>(`/entries?${p}`);
