@@ -10,13 +10,26 @@ from knowledge_assistant.core.llm.base import FakeProvider
 
 @pytest.fixture
 def client(tmp_path):
-    settings = Settings(data_dir=tmp_path, embedding_dim=64, llm_provider="none")
+    settings = Settings(data_dir=tmp_path, embedding_dim=64, llm_provider="none", worker_threads=1)
     settings.uploads_dir.mkdir(parents=True, exist_ok=True)
     container = Container.build(settings, embedder=HashEmbedder(64), llm=FakeProvider(reply="Answer [1]."))
     app = create_app(container, serve_static=False)
     with TestClient(app) as c:
         c.container = container
         yield c
+
+
+def test_catalog_crud_and_error_mapping(client):
+    r = client.post("/api/v1/categories", json={"name": "Sci"})
+    assert r.status_code == 201
+    cid = r.json()["id"]
+    assert client.post("/api/v1/categories", json={"name": "Sci"}).status_code == 409
+    assert client.patch("/api/v1/categories/nope", json={"name": "x"}).status_code == 404
+    t = client.post("/api/v1/topics", json={"category_id": cid, "name": "Physics"}).json()
+    assert client.get("/api/v1/categories").json()[0]["topic_count"] == 1
+    assert client.get(f"/api/v1/topics?category_id={cid}").json()[0]["id"] == t["id"]
+    assert client.delete(f"/api/v1/categories/{cid}").status_code == 204
+    assert client.get("/api/v1/topics").json() == []
 
 
 def test_entries_search_and_ask_stream(client):
@@ -39,7 +52,7 @@ def test_entries_search_and_ask_stream(client):
 
 def test_ask_without_llm_streams_sources_then_error_event(tmp_path):
     from knowledge_assistant.core.llm.base import NullProvider
-    settings = Settings(data_dir=tmp_path, embedding_dim=64, llm_provider="none")
+    settings = Settings(data_dir=tmp_path, embedding_dim=64, llm_provider="none", worker_threads=1)
     container = Container.build(settings, embedder=HashEmbedder(64), llm=NullProvider())
     with TestClient(create_app(container, serve_static=False)) as c:
         c.post("/api/v1/entries", json={"title": "Coffee", "content": "Espresso needs nine bars of pressure."})
