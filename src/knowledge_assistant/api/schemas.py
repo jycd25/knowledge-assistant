@@ -101,3 +101,24 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=1)
     category_id: str | None = None
     topic_id: str | None = None
+
+
+class JobOut(BaseModel):
+    id: str
+    kind: str
+    label: str
+    status: str
+    progress: int
+    message: str
+    error: str | None
+    result: dict
+    attempts: int
+    created_at: datetime
+    finished_at: datetime | None
+
+
+class IngestTextRequest(BaseModel):
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    topic_id: str | None = None
+    tags: list[str] = []
