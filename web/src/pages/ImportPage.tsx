@@ -15,6 +15,10 @@ export default function ImportPage() {
   const [text, setText] = useState({ title: "", content: "" });
   const fileInput = useRef<HTMLInputElement>(null);
   const jobs = useQuery({ queryKey: ["jobs"], queryFn: api.jobs, refetchInterval: (q) => q.state.data?.some((j) => j.status === "queued" || j.status === "running") ? 1500 : false });
+  const activeCount = jobs.data?.filter((j) => j.status === "queued" || j.status === "running").length ?? 0;
+  const prevActive = useRef(activeCount);
+  if (prevActive.current > 0 && activeCount < prevActive.current) void qc.invalidateQueries({ queryKey: ["entries"] });
+  prevActive.current = activeCount;
   const refresh = () => { void qc.invalidateQueries({ queryKey: ["jobs"] }); void qc.invalidateQueries({ queryKey: ["entries"] }); };
 
   const upload = useMutation({
