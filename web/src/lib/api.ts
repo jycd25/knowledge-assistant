@@ -39,6 +39,20 @@ export const api = {
 
   search: (b: { query: string; limit?: number; category_id?: string | null; topic_id?: string | null; mode?: T.SearchMode; max_distance?: number }) =>
     request<T.SearchHit[]>("/search", { method: "POST", body: json(b) }),
+
+  jobs: () => request<T.Job[]>("/jobs"),
+  job: (id: string) => request<T.Job>(`/jobs/${id}`),
+  ingestText: (b: { title: string; content: string; topic_id?: string | null; tags?: string[] }) => request<T.Job>("/jobs/ingest-text", { method: "POST", body: json(b) }),
+  ingestPdf: async (file: File, opts: { title?: string; topic_id?: string | null; tags?: string } = {}) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (opts.title) fd.append("title", opts.title);
+    if (opts.topic_id) fd.append("topic_id", opts.topic_id);
+    if (opts.tags) fd.append("tags", opts.tags);
+    const res = await fetch(`${BASE}/jobs/ingest-pdf`, { method: "POST", body: fd });
+    if (!res.ok) throw new ApiError(res.status, (await res.json()).detail ?? res.statusText);
+    return res.json() as Promise<T.Job>;
+  },
 };
 
 /** Parse a fetch() body as server-sent events. Yields {event, data}. */
@@ -67,4 +81,7 @@ export async function* sse(res: Response): AsyncGenerator<{ event: string; data:
 
 export function askStream(b: { question: string; category_id?: string | null; topic_id?: string | null }, signal?: AbortSignal) {
   return fetch(`${BASE}/ask`, { method: "POST", headers: { "Content-Type": "application/json" }, body: json(b), signal }).then(sse);
+}
+export function jobEvents(id: string, signal?: AbortSignal) {
+  return fetch(`${BASE}/jobs/${id}/events`, { signal }).then(sse);
 }
