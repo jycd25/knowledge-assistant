@@ -1,3 +1,6 @@
+import io
+
+import pymupdf
 import pytest
 from fastapi.testclient import TestClient
 
@@ -48,6 +51,24 @@ def test_entries_search_and_ask_stream(client):
     assert p.json()["chunk_count"] > 1
     assert client.delete(f"/api/v1/entries/{e.json()['id']}").status_code == 204
     assert client.get(f"/api/v1/entries/{e.json()['id']}").status_code == 404
+
+
+def test_pdf_upload_creates_job_and_worker_completes_it(client):
+    doc = pymupdf.open()
+    doc.new_page().insert_text((72, 72), "Mitochondria are the powerhouse of the cell. " * 10)
+    buf = io.BytesIO(doc.tobytes())
+    r = client.post("/api/v1/jobs/ingest-pdf", files={"file": ("cell.pdf", buf, "application/pdf")}, data={"tags": "bio, cells"})
+    assert r.status_code == 202
+    jid = r.json()["id"]
+    # worker thread is running under lifespan; wait via the SSE endpoint
+    with client.stream("GET", f"/api/v1/jobs/{jid}/events") as s:
+        events = "".join(s.iter_text())
+    assert '"status": "done"' in events, events
+    j = client.get(f"/api/v1/jobs/{jid}").json()
+    assert j["result"]["chunks"] >= 1
+    entries = client.get("/api/v1/entries").json()
+    assert entries[0]["source"] == "pdf" and entries[0]["tags"] == ["bio", "cells"]
+    assert client.post("/api/v1/jobs/ingest-pdf", files={"file": ("x.txt", b"hi", "text/plain")}).status_code == 400
 
 
 def test_ask_without_llm_streams_sources_then_error_event(tmp_path):
