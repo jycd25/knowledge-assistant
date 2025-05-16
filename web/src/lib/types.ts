@@ -5,3 +5,4 @@ export interface EntrySummary { id: string; title: string; topic_id: string | nu
 export interface Entry extends EntrySummary { content: string; chunk_count: number }
 export interface SearchHit { chunk_id: string; entry_id: string; entry_title: string; topic_id: string | null; text: string; score: number; vector_rank: number | null; keyword_rank: number | null }
 export type SearchMode = "hybrid" | "vector" | "keyword";
+export interface Job { id: string; kind: string; label: string; status: "queued" | "running" | "done" | "failed"; progress: number; message: string; error: string | null; result: Record<string, unknown>; attempts: number; created_at: string; finished_at: string | null }

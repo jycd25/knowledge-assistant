@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Route, Routes } from "react-router";
 import { BookOpen, FileUp, LibraryBig, NotebookPen, Search, Settings2 } from "lucide-react";
 import SearchPage from "./pages/SearchPage";
+import ImportPage from "./pages/ImportPage";
 
 const NAV = [
   { to: "/search", label: "Search", icon: Search },
@@ -33,6 +34,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/search" replace />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/import" element={<ImportPage />} />
           </Routes>
         </div>
       </main>
