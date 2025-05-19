@@ -79,24 +79,6 @@ def search(query: str, limit: int = 5) -> None:
             typer.echo(h.text[:300])
 
 
-@app.command()
-def ask(question: str) -> None:
-    """Ask a question; the answer cites passages from your library."""
-    from .container import Container
-    from .core.qa import QAService
-    from .core.search import HybridSearch
-
-    c = Container.build(get_settings())
-    with c.session_factory() as s:
-        qa = QAService(HybridSearch(s, c.embedder), c.llm)
-        hits, stream = qa.stream(question)
-        for tok in stream:
-            typer.echo(tok, nl=False)
-        typer.echo()
-        for i, h in enumerate(hits, 1):
-            typer.secho(f"[{i}] {h.entry_title}", fg="cyan")
-
-
 @db_app.command("path")
 def db_path() -> None:
     typer.echo(get_settings().db_path)
