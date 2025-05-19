@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
+import ReactMarkdown from "react-markdown";
 import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import type { Category, Topic } from "../lib/types";
-import { Empty, ErrorNote, PageHeader, ScopePicker, Tag } from "../components/ui";
+import { Empty, ErrorNote, PageHeader, ScopePicker, Tag, fmtDate } from "../components/ui";
 
 export default function LibraryPage() {
+  const { entryId } = useParams();
   const [cat, setCat] = useState<string | null>(null);
   const [topic, setTopic] = useState<string | null>(null);
   return (
@@ -14,7 +16,7 @@ export default function LibraryPage() {
       <PageHeader title="Library" lede="Categories hold topics; topics hold entries. Deleting a level deletes what's inside it." />
       <div className="grid grid-cols-[240px_minmax(0,1fr)] gap-6">
         <Tree cat={cat} topic={topic} onSelect={(c, t) => { setCat(c); setTopic(t); }} />
-        <EntryList cat={cat} topic={topic} />
+        {entryId ? <EntryDetail id={entryId} /> : <EntryList cat={cat} topic={topic} />}
       </div>
     </div>
   );
@@ -142,5 +144,36 @@ function EntryForm({ topicId, onDone, initial }: { topicId: string | null; onDon
         <button className="btn-primary" disabled={save.isPending}>{save.isPending ? "Indexing…" : initial ? "Save changes" : "Add to library"}</button>
       </div>
     </form>
+  );
+}
+
+function EntryDetail({ id }: { id: string }) {
+  const nav = useNavigate();
+  const qc = useQueryClient();
+  const entry = useQuery({ queryKey: ["entry", id], queryFn: () => api.entry(id) });
+  const [editing, setEditing] = useState(false);
+  const del = useMutation({ mutationFn: () => api.deleteEntry(id), onSuccess: () => { void qc.invalidateQueries({ queryKey: ["entries"] }); nav("/library"); } });
+  if (entry.isError) return <ErrorNote error={entry.error} />;
+  if (!entry.data) return null;
+  const e = entry.data;
+  if (editing) return <EntryForm topicId={e.topic_id} initial={e} onDone={() => setEditing(false)} />;
+  return (
+    <article className="card p-6">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <Link to="/library" className="text-[13px] text-muted hover:underline">← Library</Link>
+          <h2 className="mt-1 text-[24px] font-semibold leading-tight">{e.title}</h2>
+          <div className="mt-2 flex flex-wrap items-center gap-1 text-[12px] text-muted">
+            <Tag>{e.source}</Tag>{e.tags.map((t) => <Tag key={t}>{t}</Tag>)}
+            <span className="ml-2 font-mono">{e.chunk_count} chunks · updated {fmtDate(e.updated_at)}</span>
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <button className="btn-quiet" onClick={() => setEditing(true)}><Pencil size={14} />Edit</button>
+          <button className="btn-danger" onClick={() => { if (confirm("Delete this entry?")) del.mutate(); }}><Trash2 size={14} />Delete</button>
+        </div>
+      </div>
+      <div className="prose-answer text-[15px]"><ReactMarkdown>{e.content}</ReactMarkdown></div>
+    </article>
   );
 }
