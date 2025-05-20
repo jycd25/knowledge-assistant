@@ -71,6 +71,20 @@ def test_pdf_upload_creates_job_and_worker_completes_it(client):
     assert client.post("/api/v1/jobs/ingest-pdf", files={"file": ("x.txt", b"hi", "text/plain")}).status_code == 400
 
 
+def test_notes_process_save_and_promote(client):
+    text = "Today I learned that sourdough needs a long proof. However, the oven must be very hot. " * 3
+    r = client.post("/api/v1/notes/process", json={"text": text, "use_llm": False}).json()
+    assert r["markdown"].startswith("# ") and not r["used_llm"]
+    r2 = client.post("/api/v1/notes/process", json={"text": text, "use_llm": True}).json()
+    assert r2["used_llm"] and r2["markdown"] == "Answer [1]."
+    n = client.post("/api/v1/notes", json={"body": text, "tags": ["baking"]}).json()
+    assert n["title"]
+    client.patch(f"/api/v1/notes/{n['id']}", json={"processed_body": r["markdown"]})
+    e = client.post(f"/api/v1/notes/{n['id']}/to-entry", json={})
+    assert e.status_code == 201 and e.json()["source"] == "note"
+    assert client.get(f"/api/v1/notes/{n['id']}").json()["entry_id"] == e.json()["id"]
+
+
 def test_ask_without_llm_streams_sources_then_error_event(tmp_path):
     from knowledge_assistant.core.llm.base import NullProvider
     settings = Settings(data_dir=tmp_path, embedding_dim=64, llm_provider="none", worker_threads=1)
