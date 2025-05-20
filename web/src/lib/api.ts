@@ -53,6 +53,13 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, (await res.json()).detail ?? res.statusText);
     return res.json() as Promise<T.Job>;
   },
+
+  notes: () => request<T.Note[]>("/notes"),
+  createNote: (b: { title?: string; body: string; tags?: string[] }) => request<T.Note>("/notes", { method: "POST", body: json(b) }),
+  updateNote: (id: string, b: Partial<Pick<T.Note, "title" | "body" | "processed_body" | "tags">>) => request<T.Note>(`/notes/${id}`, { method: "PATCH", body: json(b) }),
+  deleteNote: (id: string) => request<void>(`/notes/${id}`, { method: "DELETE" }),
+  processNote: (b: { text: string; user_request?: string; use_llm: boolean }) => request<T.ProcessedNote>("/notes/process", { method: "POST", body: json(b) }),
+  noteToEntry: (id: string, b: { topic_id?: string | null; use_processed?: boolean }) => request<T.Entry>(`/notes/${id}/to-entry`, { method: "POST", body: json(b) }),
 };
 
 /** Parse a fetch() body as server-sent events. Yields {event, data}. */

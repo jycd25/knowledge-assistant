@@ -3,6 +3,7 @@ import { BookOpen, FileUp, LibraryBig, NotebookPen, Search, Settings2 } from "lu
 import SearchPage from "./pages/SearchPage";
 import LibraryPage from "./pages/LibraryPage";
 import ImportPage from "./pages/ImportPage";
+import NotesPage from "./pages/NotesPage";
 
 const NAV = [
   { to: "/search", label: "Search", icon: Search },
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/library/:entryId" element={<LibraryPage />} />
             <Route path="/import" element={<ImportPage />} />
+            <Route path="/notes" element={<NotesPage />} />
           </Routes>
         </div>
       </main>
