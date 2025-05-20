@@ -122,3 +122,46 @@ class IngestTextRequest(BaseModel):
     content: str = Field(min_length=1)
     topic_id: str | None = None
     tags: list[str] = []
+
+
+class NoteIn(BaseModel):
+    title: str = ""
+    body: str = Field(min_length=1)
+    tags: list[str] = []
+
+
+class NotePatch(BaseModel):
+    title: str | None = None
+    body: str | None = None
+    processed_body: str | None = None
+    tags: list[str] | None = None
+
+
+class NoteOut(BaseModel):
+    id: str
+    title: str
+    body: str
+    processed_body: str | None
+    tags: list[str]
+    entry_id: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProcessNoteRequest(BaseModel):
+    text: str = Field(min_length=1)
+    user_request: str | None = None
+    use_llm: bool = True
+
+
+class ProcessNoteOut(BaseModel):
+    title: str
+    markdown: str
+    tags: list[str]
+    used_llm: bool
+    applied_preferences: list[dict]
+
+
+class NoteToEntryRequest(BaseModel):
+    topic_id: str | None = None
+    use_processed: bool = True

@@ -81,3 +81,15 @@ class Job(Base):
     started_at: Mapped[datetime | None] = mapped_column(nullable=True)
     heartbeat_at: Mapped[datetime | None] = mapped_column(nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+
+class Note(Base):
+    __tablename__ = "notes"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    title: Mapped[str] = mapped_column(String(500))
+    body: Mapped[str] = mapped_column(Text)
+    processed_body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    entry_id: Mapped[str | None] = mapped_column(ForeignKey("entries.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
