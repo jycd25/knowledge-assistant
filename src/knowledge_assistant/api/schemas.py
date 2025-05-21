@@ -165,3 +165,48 @@ class ProcessNoteOut(BaseModel):
 class NoteToEntryRequest(BaseModel):
     topic_id: str | None = None
     use_processed: bool = True
+
+
+class TemplateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    body: str
+    kind: str = "custom"
+
+
+class TemplateOut(BaseModel):
+    id: str
+    name: str
+    kind: str
+    body: str
+    created_at: datetime
+
+
+class PreferenceOut(BaseModel):
+    key: str
+    value: str
+    explanation: str
+    updated_at: datetime
+
+
+class PreferenceIn(BaseModel):
+    key: str = Field(min_length=1, max_length=200)
+    value: str
+    explanation: str = ""
+
+
+class SettingsOut(BaseModel):
+    llm_provider: str
+    llm_model: str
+    llm_available: bool
+    embedding_model: str
+    embedding_dim: int
+    data_dir: str
+    entry_count: int
+    chunk_count: int
+
+
+class HealthOut(BaseModel):
+    ok: bool
+    version: str
+    llm_provider: str
+    llm_available: bool

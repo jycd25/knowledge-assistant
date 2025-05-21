@@ -3,6 +3,7 @@ from knowledge_assistant.core.llm.base import FakeProvider, NullProvider
 from knowledge_assistant.core.qa import QAService
 from knowledge_assistant.core.repositories import EntryRepository
 from knowledge_assistant.core.search import HybridSearch
+from knowledge_assistant.core.templates import BUILTIN_TEMPLATES, get_builtin
 
 LONG = ("Today I learned about photosynthesis in plants. Chlorophyll absorbs light energy. "
         "The Calvin cycle fixes carbon into sugars. However, respiration releases that energy again. "
@@ -37,3 +38,9 @@ def test_qa_answers_with_sources_and_handles_no_hits(session, embedder):
     hits, stream = qa.stream("espresso pressure")
     assert hits and "".join(stream).strip() == "Nine bars [1]."
     assert qa.answer("zzzz qqqq").sources == []
+
+
+def test_builtin_templates():
+    assert set(BUILTIN_TEMPLATES) == {"basic", "meeting", "project", "research", "study"}
+    assert get_builtin("nope") == BUILTIN_TEMPLATES["basic"]
+    assert all(t.startswith("# ") for t in BUILTIN_TEMPLATES.values())
