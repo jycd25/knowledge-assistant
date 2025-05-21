@@ -7,6 +7,7 @@ import LibraryPage from "./pages/LibraryPage";
 import ImportPage from "./pages/ImportPage";
 import NotesPage from "./pages/NotesPage";
 import TemplatesPage from "./pages/TemplatesPage";
+import SettingsPage from "./pages/SettingsPage";
 
 const NAV = [
   { to: "/search", label: "Search", icon: Search },
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/import" element={<ImportPage />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </div>
       </main>
