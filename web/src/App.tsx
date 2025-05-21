@@ -1,9 +1,12 @@
 import { NavLink, Navigate, Route, Routes } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import { BookOpen, FileUp, LibraryBig, NotebookPen, Search, Settings2 } from "lucide-react";
+import { api } from "./lib/api";
 import SearchPage from "./pages/SearchPage";
 import LibraryPage from "./pages/LibraryPage";
 import ImportPage from "./pages/ImportPage";
 import NotesPage from "./pages/NotesPage";
+import TemplatesPage from "./pages/TemplatesPage";
 
 const NAV = [
   { to: "/search", label: "Search", icon: Search },
@@ -15,6 +18,7 @@ const NAV = [
 ];
 
 export default function App() {
+  const health = useQuery({ queryKey: ["health"], queryFn: api.health, refetchInterval: 30_000 });
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-52 shrink-0 flex-col border-r border-line bg-card px-3 py-5">
@@ -30,6 +34,11 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
+        <div className="mt-auto px-2 text-[12px] text-muted">
+          {health.isError ? <span className="text-stamp">Server not reachable</span>
+            : health.data ? <>LLM: <span className="font-mono">{health.data.llm_provider}</span>{health.data.llm_available ? "" : " (offline)"}</>
+            : "connecting…"}
+        </div>
       </aside>
       <main className="min-w-0 flex-1 px-8 py-7">
         <div className="mx-auto max-w-5xl">
@@ -40,6 +49,7 @@ export default function App() {
             <Route path="/library/:entryId" element={<LibraryPage />} />
             <Route path="/import" element={<ImportPage />} />
             <Route path="/notes" element={<NotesPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
           </Routes>
         </div>
       </main>

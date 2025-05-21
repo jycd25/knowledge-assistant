@@ -10,6 +10,8 @@ import { Empty, ErrorNote, PageHeader, ScopePicker, Tag, fmtDate } from "../comp
 export default function NotesPage() {
   const qc = useQueryClient();
   const notes = useQuery({ queryKey: ["notes"], queryFn: api.notes });
+  const templates = useQuery({ queryKey: ["templates"], queryFn: api.templates });
+  const builtin = useQuery({ queryKey: ["templates", "builtin"], queryFn: api.builtinTemplates });
   const [selected, setSelected] = useState<Note | null>(null);
   const [body, setBody] = useState("");
   const [request, setRequest] = useState("");
@@ -30,6 +32,7 @@ export default function NotesPage() {
 
   function reset() { setSelected(null); setBody(""); setProcessed(null); setRequest(""); }
   function open(n: Note) { setSelected(n); setBody(n.body); setProcessed(n.processed_body ? { markdown: n.processed_body, title: n.title, tags: n.tags, used_llm: true } : null); }
+  function useTemplate(text: string) { setBody((b) => (b.trim() ? b + "\n\n" : "") + text); }
 
   return (
     <div>
@@ -53,6 +56,11 @@ export default function NotesPage() {
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="eyebrow">draft</div>
+            <select className="field w-auto py-1 text-[13px]" defaultValue="" onChange={(e) => { const v = e.target.value; if (!v) return; const [kind, key] = v.split(":"); useTemplate(kind === "b" ? builtin.data![key] : templates.data!.find((t) => t.id === key)!.body); e.target.value = ""; }}>
+              <option value="">Insert a template…</option>
+              {builtin.data && Object.keys(builtin.data).map((k) => <option key={k} value={`b:${k}`}>{k}</option>)}
+              {templates.data?.map((t) => <option key={t.id} value={`u:${t.id}`}>{t.name} (yours)</option>)}
+            </select>
           </div>
           <textarea className="field min-h-80 font-mono text-[13px]" placeholder="Today I learned…" value={body} onChange={(e) => setBody(e.target.value)} />
           <input className="field" placeholder="Instructions for the AI pass (optional): “make it a checklist”, “keep it under 200 words”" value={request} onChange={(e) => setRequest(e.target.value)} />
