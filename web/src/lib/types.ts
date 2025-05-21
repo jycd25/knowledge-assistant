@@ -8,3 +8,6 @@ export type SearchMode = "hybrid" | "vector" | "keyword";
 export interface Job { id: string; kind: string; label: string; status: "queued" | "running" | "done" | "failed"; progress: number; message: string; error: string | null; result: Record<string, unknown>; attempts: number; created_at: string; finished_at: string | null }
 export interface Note { id: string; title: string; body: string; processed_body: string | null; tags: string[]; entry_id: string | null; created_at: string; updated_at: string }
 export interface ProcessedNote { title: string; markdown: string; tags: string[]; used_llm: boolean; applied_preferences: Record<string, unknown>[] }
+export interface Template { id: string; name: string; kind: string; body: string; created_at: string }
+export interface Preference { key: string; value: string; explanation: string; updated_at: string }
+export interface Settings { llm_provider: string; llm_model: string; llm_available: boolean; embedding_model: string; embedding_dim: number; data_dir: string; entry_count: number; chunk_count: number }

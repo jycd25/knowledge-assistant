@@ -18,6 +18,9 @@ async function request<R>(path: string, init: RequestInit = {}): Promise<R> {
 const json = (body: unknown) => JSON.stringify(body);
 
 export const api = {
+  health: () => request<{ ok: boolean; version: string; llm_provider: string; llm_available: boolean }>("/health"),
+  settings: () => request<T.Settings>("/settings"),
+
   categories: () => request<T.Category[]>("/categories"),
   createCategory: (b: { name: string; description?: string }) => request<T.Category>("/categories", { method: "POST", body: json(b) }),
   updateCategory: (id: string, b: { name?: string; description?: string }) => request<T.Category>(`/categories/${id}`, { method: "PATCH", body: json(b) }),
@@ -60,6 +63,15 @@ export const api = {
   deleteNote: (id: string) => request<void>(`/notes/${id}`, { method: "DELETE" }),
   processNote: (b: { text: string; user_request?: string; use_llm: boolean }) => request<T.ProcessedNote>("/notes/process", { method: "POST", body: json(b) }),
   noteToEntry: (id: string, b: { topic_id?: string | null; use_processed?: boolean }) => request<T.Entry>(`/notes/${id}/to-entry`, { method: "POST", body: json(b) }),
+
+  builtinTemplates: () => request<Record<string, string>>("/templates/builtin"),
+  templates: () => request<T.Template[]>("/templates"),
+  saveTemplate: (b: { name: string; body: string; kind?: string }) => request<T.Template>("/templates", { method: "PUT", body: json(b) }),
+  deleteTemplate: (id: string) => request<void>(`/templates/${id}`, { method: "DELETE" }),
+
+  preferences: () => request<T.Preference[]>("/preferences"),
+  setPreference: (b: { key: string; value: string; explanation?: string }) => request<T.Preference>("/preferences", { method: "PUT", body: json(b) }),
+  deletePreference: (key: string) => request<void>(`/preferences/${encodeURIComponent(key)}`, { method: "DELETE" }),
 };
 
 /** Parse a fetch() body as server-sent events. Yields {event, data}. */
