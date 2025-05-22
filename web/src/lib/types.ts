@@ -10,4 +10,5 @@ export interface Note { id: string; title: string; body: string; processed_body:
 export interface ProcessedNote { title: string; markdown: string; tags: string[]; used_llm: boolean; applied_preferences: Record<string, unknown>[] }
 export interface Template { id: string; name: string; kind: string; body: string; created_at: string }
 export interface Preference { key: string; value: string; explanation: string; updated_at: string }
+export interface PreferenceChat { action: string; message: string; saved: Record<string, string>[]; suggested: Record<string, string>[]; current: Record<string, string> }
 export interface Settings { llm_provider: string; llm_model: string; llm_available: boolean; embedding_model: string; embedding_dim: number; data_dir: string; entry_count: number; chunk_count: number }
