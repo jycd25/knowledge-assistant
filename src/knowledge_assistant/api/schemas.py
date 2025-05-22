@@ -194,6 +194,18 @@ class PreferenceIn(BaseModel):
     explanation: str = ""
 
 
+class PreferenceChatRequest(BaseModel):
+    message: str = Field(min_length=1)
+
+
+class PreferenceChatOut(BaseModel):
+    action: str
+    message: str
+    saved: list[dict]
+    suggested: list[dict]
+    current: dict[str, str]
+
+
 class SettingsOut(BaseModel):
     llm_provider: str
     llm_model: str

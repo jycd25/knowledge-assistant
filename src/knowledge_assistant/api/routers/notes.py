@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from ...container import Container
 from ...core import notes as note_logic
-from ...core.repositories import EntryRepository, NoteRepository
+from ...core.preferences import PreferenceService
+from ...core.repositories import EntryRepository, NoteRepository, PreferenceRepository
 from ..deps import get_container, get_session
 from ..schemas import EntryOut, NoteIn, NoteOut, NotePatch, NoteToEntryRequest, ProcessNoteOut, ProcessNoteRequest
 from .entries import _out as entry_out
@@ -21,7 +22,8 @@ def _out(n) -> NoteOut:
 @router.post("/process", response_model=ProcessNoteOut)
 def process_note(body: ProcessNoteRequest, s: Session = Depends(get_session), c: Container = Depends(get_container)):
     if body.use_llm:
-        r = note_logic.process_with_llm(body.text, c.llm, body.user_request)
+        prefs = PreferenceService(PreferenceRepository(s), c.llm).as_prompt_list()
+        r = note_logic.process_with_llm(body.text, c.llm, body.user_request, prefs)
     else:
         r = note_logic.process_heuristic(body.text)
     return ProcessNoteOut(title=r.title, markdown=r.markdown, tags=r.tags, used_llm=r.used_llm,

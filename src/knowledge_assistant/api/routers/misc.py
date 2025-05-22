@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 from ... import __version__
 from ...container import Container
 from ...core.models import Chunk, Entry
+from ...core.preferences import PreferenceService
 from ...core.repositories import PreferenceRepository, TemplateRepository
 from ...core.templates import BUILTIN_TEMPLATES
 from ..deps import get_container, get_session
-from ..schemas import HealthOut, PreferenceIn, PreferenceOut, SettingsOut, TemplateIn, TemplateOut
+from ..schemas import (HealthOut, PreferenceChatOut, PreferenceChatRequest, PreferenceIn, PreferenceOut,
+                       SettingsOut, TemplateIn, TemplateOut)
 
 router = APIRouter(tags=["misc"])
 
@@ -57,6 +59,7 @@ def delete_preference(key: str, s: Session = Depends(get_session)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.post("/preferences/chat", response_model=PreferenceChatOut)
 def preference_chat(body: PreferenceChatRequest, s: Session = Depends(get_session), c: Container = Depends(get_container)):
     r = PreferenceService(PreferenceRepository(s), c.llm).handle(body.message)
     return PreferenceChatOut(action=r.action, message=r.message, saved=r.saved, suggested=r.suggested, current=r.current)
