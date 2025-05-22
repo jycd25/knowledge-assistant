@@ -72,6 +72,7 @@ export const api = {
   preferences: () => request<T.Preference[]>("/preferences"),
   setPreference: (b: { key: string; value: string; explanation?: string }) => request<T.Preference>("/preferences", { method: "PUT", body: json(b) }),
   deletePreference: (key: string) => request<void>(`/preferences/${encodeURIComponent(key)}`, { method: "DELETE" }),
+  preferenceChat: (message: string) => request<T.PreferenceChat>("/preferences/chat", { method: "POST", body: json({ message }) }),
 };
 
 /** Parse a fetch() body as server-sent events. Yields {event, data}. */

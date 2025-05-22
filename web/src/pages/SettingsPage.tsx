@@ -1,13 +1,20 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { api } from "../lib/api";
-import { PageHeader } from "../components/ui";
+import { ErrorNote, PageHeader } from "../components/ui";
 
 export default function SettingsPage() {
   const qc = useQueryClient();
   const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings });
   const prefs = useQuery({ queryKey: ["preferences"], queryFn: api.preferences });
+  const [msg, setMsg] = useState("");
+  const [log, setLog] = useState<{ who: "you" | "assistant"; text: string; suggested?: Record<string, string>[] }[]>([]);
   const invalidate = () => qc.invalidateQueries({ queryKey: ["preferences"] });
+  const chat = useMutation({
+    mutationFn: api.preferenceChat,
+    onSuccess: (r, m) => { setLog((l) => [...l, { who: "you", text: m }, { who: "assistant", text: r.message, suggested: r.suggested }]); setMsg(""); void invalidate(); },
+  });
   const set = useMutation({ mutationFn: api.setPreference, onSuccess: invalidate });
   const del = useMutation({ mutationFn: api.deletePreference, onSuccess: invalidate });
   const s = settings.data;
@@ -15,7 +22,7 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader title="Settings" />
-      <div className="grid max-w-2xl gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <section className="flex flex-col gap-4">
           <div className="card p-4">
             <div className="eyebrow mb-3">this installation</div>
@@ -35,7 +42,7 @@ export default function SettingsPage() {
           <div className="card p-4">
             <div className="eyebrow mb-3">note preferences</div>
             <p className="mb-3 text-[13px] text-muted">Applied every time a note is tidied with AI.</p>
-            {prefs.data?.length === 0 && <div className="text-[13px] text-muted">None yet — add one below.</div>}
+            {prefs.data?.length === 0 && <div className="text-[13px] text-muted">None yet — add one below or describe it in the chat.</div>}
             <ul className="flex flex-col gap-1">
               {prefs.data?.map((p) => (
                 <li key={p.key} className="group flex items-start gap-2 rounded-card px-2 py-1.5 text-[14px] hover:bg-paper">
@@ -50,6 +57,31 @@ export default function SettingsPage() {
               <button className="btn-quiet">Add</button>
             </form>
           </div>
+        </section>
+        <section className="card flex flex-col p-4">
+          <div className="eyebrow mb-3">describe preferences in plain language</div>
+          <div className="flex min-h-64 flex-1 flex-col gap-2 overflow-y-auto">
+            {log.length === 0 && <div className="text-[13px] text-muted">Try: “I like bullet points and a short summary at the top.”</div>}
+            {log.map((m, i) => (
+              <div key={i} className={`max-w-[85%] rounded-card px-3 py-2 text-[14px] ${m.who === "you" ? "self-end bg-ink text-paper" : "bg-paper"}`}>
+                {m.text}
+                {m.suggested && m.suggested.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-1">
+                    {m.suggested.map((sg) => (
+                      <button key={sg.key} className="btn-quiet justify-between py-1 text-[13px]" onClick={() => set.mutate({ key: sg.key, value: sg.value, explanation: sg.explanation })}>
+                        <span>{sg.key}: {sg.value}</span><span className="text-muted">save</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <ErrorNote error={chat.error} />
+          <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (msg.trim()) chat.mutate(msg); }}>
+            <input className="field" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Tell me how you like your notes" />
+            <button className="btn-primary" disabled={chat.isPending || !msg.trim()}>{chat.isPending ? "…" : "Send"}</button>
+          </form>
         </section>
       </div>
     </div>
