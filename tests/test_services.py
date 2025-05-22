@@ -1,7 +1,8 @@
 from knowledge_assistant.core import notes
 from knowledge_assistant.core.llm.base import FakeProvider, NullProvider
+from knowledge_assistant.core.preferences import PreferenceService
 from knowledge_assistant.core.qa import QAService
-from knowledge_assistant.core.repositories import EntryRepository
+from knowledge_assistant.core.repositories import EntryRepository, PreferenceRepository
 from knowledge_assistant.core.search import HybridSearch
 from knowledge_assistant.core.templates import BUILTIN_TEMPLATES, get_builtin
 
@@ -28,6 +29,39 @@ def test_llm_note_uses_prompt_with_preferences_and_falls_back():
     assert "style: casual" in prompt and "be brief" in prompt and "some text" in prompt
     fallback = notes.process_with_llm(LONG, NullProvider())
     assert not fallback.used_llm and fallback.markdown.startswith("# ")
+
+
+def test_preference_chain_add_list_remove(session):
+    repo = PreferenceRepository(session)
+    fake = FakeProvider()
+    svc = PreferenceService(repo, fake, confidence_threshold=80)
+
+    fake.reply = '{"request_type":"add_preference","confidence":95}'
+    # second call (identify) gets the same reply object; emulate by swapping reply between calls
+    class Seq(FakeProvider):
+        def __init__(self, replies): super().__init__(); self.replies = list(replies)
+        def chat(self, messages, **kw):
+            self.calls.append(messages)
+            return self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
+    svc.provider = Seq(['{"request_type":"add_preference","confidence":95}',
+                        '{"identified_preferences":{"style":{"value":"bullet points","confidence":90,"explanation":"asked"}}}'])
+    r = svc.handle("I want bullet points")
+    assert r.action == "add" and r.saved[0]["key"] == "style" and repo.get("style").value == "bullet points"
+
+    svc.provider = Seq(['{"request_type":"add_preference","confidence":95}',
+                        '{"identified_preferences":{"tone":{"value":"formal","confidence":50,"explanation":""}}}'])
+    r = svc.handle("maybe formal?")
+    assert r.suggested and not r.saved and repo.get("tone") is None  # low confidence never auto-saves
+
+    svc.provider = Seq(['{"request_type":"list_preferences","confidence":99}'])
+    assert svc.handle("show prefs").current == {"style": "bullet points"}
+
+    svc.provider = Seq(['{"request_type":"remove_preference","confidence":99}', '{"remove":["style"],"confidence":95}'])
+    r = svc.handle("drop bullet points")
+    assert r.action == "remove" and repo.get("style") is None
+
+    svc.provider = Seq(["not json at all"])
+    assert svc.handle("???").action in ("none", "add")  # garbage reply never raises
 
 
 def test_qa_answers_with_sources_and_handles_no_hits(session, embedder):
