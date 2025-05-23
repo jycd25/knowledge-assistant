@@ -1,9 +1,89 @@
 # Knowledge Assistant
 
-Rewrite in progress: a local-first knowledge base on FastAPI + SQLite (sqlite-vec, FTS5),
-MVP first. See `docs/design.md`.
+A local-first personal knowledge base. Import PDFs and notes, search them by meaning and
+keyword, and ask questions that are answered with citations — all from one SQLite file on
+your machine. Indexing and search never touch the network; an LLM (local Ollama or a cloud
+API) is only needed for answers and AI note tidying.
+
+## Features
+
+- **Import** — drop PDFs or paste text. Documents are split into passages, embedded locally,
+  and indexed in the background with live progress.
+- **Search** — hybrid retrieval: vector similarity (sqlite-vec) fused with BM25 keyword
+  search (FTS5). Scope by category or topic.
+- **Ask** — answers stream in with `[n]` citations that link to the exact passages used.
+- **Library** — organise entries into categories and topics. Edits re-index automatically.
+- **Notes** — write, tidy into a structured note (rule-based or AI), promote to the library.
+- **Templates** — five built-in structures plus your own.
+- **Preferences** — describe how you like notes formatted in plain language.
+
+## Requirements
+
+- Python 3.10+
+- Optional: [Ollama](https://ollama.com) for fully offline answers, or an OpenAI/Anthropic key
+
+## Install
+
+```bash
+pip install knowledge-assistant[ollama]   # or [openai] / [anthropic] / [all]
+ka serve --open
+```
+
+The first run downloads a small embedding model (~130 MB) and opens the app in your browser.
+
+## Configuration
+
+Environment variables (or a `.env` file in the working directory), all prefixed `KA_`:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `KA_DATA_DIR` | `~/.knowledge-assistant` | Where the database, uploads and models live |
+| `KA_PORT` | `8765` | HTTP port |
+| `KA_LLM_PROVIDER` | `ollama` | `ollama`, `openai`, `anthropic`, or `none` |
+| `KA_LLM_MODEL` | `llama3.2` | Model name for the chosen provider |
+| `KA_OLLAMA_HOST` | `http://127.0.0.1:11434` | |
+| `KA_OPENAI_API_KEY` / `KA_ANTHROPIC_API_KEY` | | Only for cloud providers |
+| `KA_EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5` | Local embedding model (fastembed) |
+| `KA_CHUNK_TOKENS` | `512` | Passage size |
+| `KA_SEARCH_MAX_DISTANCE` | `0.45` | Vector cutoff (cosine distance); re-tune if you change the embedding model |
+| `KA_WORKER_THREADS` | `2` | Background import workers |
+
+## CLI
+
+```
+ka serve [--open] [--port N]   start API, worker and web UI
+ka ingest FILE                 import a PDF or text file without the server
+ka search "query"              search from the terminal
+ka db path | ka db reset       locate or wipe the database
+```
+
+## Architecture
+
+One Python process: FastAPI serves the API and the built React app; a thread pool consumes a
+job table in the same SQLite database; PDF parsing runs in a subprocess so a parser crash
+fails one job instead of the server.
+
+```
+src/knowledge_assistant/
+  core/        models, repositories, chunking, embeddings, search, llm/, notes, preferences
+  jobs/        queue, worker, handlers, pdf_extract
+  api/         FastAPI routers and schemas
+  cli.py       `ka`
+web/           React 19 + Vite + Tailwind 4 (builds into src/knowledge_assistant/static)
+tests/         pytest (core, jobs, API) — no network, no model download
+```
+
+## Development
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev,all]"
+pytest
+
+cd web && npm install && npm run dev  # UI with API proxy to :8765
+ka serve                              # in another terminal
 ```
+
+## License
+
+MIT
