@@ -84,5 +84,18 @@ def db_path() -> None:
     typer.echo(get_settings().db_path)
 
 
+@db_app.command("reset")
+def db_reset(yes: bool = typer.Option(False, "--yes", help="skip confirmation")) -> None:
+    """Delete the database and uploads. Irreversible."""
+    settings = get_settings()
+    if not yes and not typer.confirm(f"Delete everything under {settings.data_dir}?"):
+        raise typer.Abort()
+    for p in (settings.db_path, settings.db_path.with_suffix(".db-wal"), settings.db_path.with_suffix(".db-shm")):
+        p.unlink(missing_ok=True)
+    shutil.rmtree(settings.uploads_dir, ignore_errors=True)
+    settings.uploads_dir.mkdir(parents=True, exist_ok=True)
+    typer.echo("database reset")
+
+
 if __name__ == "__main__":
     app()
