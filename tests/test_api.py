@@ -22,6 +22,12 @@ def client(tmp_path):
         yield c
 
 
+def test_health_and_settings(client):
+    assert client.get("/api/v1/health").json()["ok"] is True
+    s = client.get("/api/v1/settings").json()
+    assert s["llm_provider"] == "fake" and s["entry_count"] == 0
+
+
 def test_catalog_crud_and_error_mapping(client):
     r = client.post("/api/v1/categories", json={"name": "Sci"})
     assert r.status_code == 201
@@ -83,6 +89,18 @@ def test_notes_process_save_and_promote(client):
     e = client.post(f"/api/v1/notes/{n['id']}/to-entry", json={})
     assert e.status_code == 201 and e.json()["source"] == "note"
     assert client.get(f"/api/v1/notes/{n['id']}").json()["entry_id"] == e.json()["id"]
+
+
+def test_templates_and_preferences(client):
+    assert set(client.get("/api/v1/templates/builtin").json()) == {"basic", "meeting", "project", "research", "study"}
+    t = client.put("/api/v1/templates", json={"name": "Mine", "body": "# x"}).json()
+    assert client.put("/api/v1/templates", json={"name": "Mine", "body": "# y"}).json()["body"] == "# y"
+    assert client.delete(f"/api/v1/templates/{t['id']}").status_code == 204
+    client.put("/api/v1/preferences", json={"key": "style", "value": "casual"})
+    assert client.get("/api/v1/preferences").json()[0]["value"] == "casual"
+    client.container.llm.reply = '{"request_type":"list_preferences","confidence":99}'
+    assert client.post("/api/v1/preferences/chat", json={"message": "show"}).json()["current"] == {"style": "casual"}
+    assert client.delete("/api/v1/preferences/style").status_code == 204
 
 
 def test_ask_without_llm_streams_sources_then_error_event(tmp_path):
