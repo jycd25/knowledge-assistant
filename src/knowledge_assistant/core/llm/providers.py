@@ -61,7 +61,7 @@ class OpenAIProvider:
     def stream(self, messages, *, temperature=0.2, max_tokens=1024) -> Iterator[str]:
         for chunk in self._client.chat.completions.create(model=self.model, messages=_dicts(messages),
                                                           temperature=temperature, max_tokens=max_tokens, stream=True):
-            delta = chunk.choices[0].delta.content
+            delta = chunk.choices[0].delta.content if chunk.choices else None
             if delta:
                 yield delta
 
