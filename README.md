@@ -5,6 +5,13 @@ keyword, and ask questions that are answered with citations — all from one SQL
 your machine. Indexing and search never touch the network; an LLM (local Ollama or a cloud
 API) is only needed for answers and AI note tidying.
 
+```
+npx knowledge-assistant
+```
+
+That installs a private Python environment on first run, downloads a small embedding model
+(~130 MB), and opens the app in your browser.
+
 ## Features
 
 - **Import** — drop PDFs or paste text. Documents are split into passages, embedded locally,
@@ -19,17 +26,16 @@ API) is only needed for answers and AI note tidying.
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.10+ (the npm launcher finds it; `pip` users install directly)
+- Node 18+ only if using the npm launcher
 - Optional: [Ollama](https://ollama.com) for fully offline answers, or an OpenAI/Anthropic key
 
-## Install
+## Install without npm
 
 ```bash
 pip install knowledge-assistant[ollama]   # or [openai] / [anthropic] / [all]
 ka serve --open
 ```
-
-The first run downloads a small embedding model (~130 MB) and opens the app in your browser.
 
 ## Configuration
 
@@ -64,12 +70,27 @@ job table in the same SQLite database; PDF parsing runs in a subprocess so a par
 fails one job instead of the server.
 
 ```
+npm launcher ─► ka serve
+                 ├─ FastAPI  /api/v1  + static SPA
+                 ├─ Worker pool ◄── jobs table
+                 │     └─ pdf_extract (subprocess)
+                 ├─ Embedder: fastembed (ONNX, local)
+                 ├─ LLM: ollama | openai | anthropic | none
+                 └─ knowledge.db: tables + vec0 + fts5
+```
+
+The job queue is the producer/consumer seam: producers call `JobQueue.enqueue`, handlers are
+registered by kind. Backing it with Redis or a separate worker process later means replacing
+`jobs/queue.py` only. New sources (e.g. an email connector) are new job kinds.
+
+```
 src/knowledge_assistant/
   core/        models, repositories, chunking, embeddings, search, llm/, notes, preferences
   jobs/        queue, worker, handlers, pdf_extract
   api/         FastAPI routers and schemas
   cli.py       `ka`
 web/           React 19 + Vite + Tailwind 4 (builds into src/knowledge_assistant/static)
+launcher/      npm package: finds Python, creates a venv, runs `ka serve`
 tests/         pytest (core, jobs, API) — no network, no model download
 ```
 
@@ -80,9 +101,12 @@ python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev,all]"
 pytest
 
-cd web && npm install && npm run dev  # UI with API proxy to :8765
-ka serve                              # in another terminal
+cd web && npm install && npm run dev      # UI with API proxy to :8765
+ka serve                                   # in another terminal
 ```
+
+Release: `cd web && npm run build`, then `./scripts/build-launcher.sh` to produce the wheel and
+stage it in `launcher/`, then `cd launcher && npm publish`.
 
 ## License
 
