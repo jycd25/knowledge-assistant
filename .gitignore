@@ -19,6 +19,10 @@ web/package-lock.json
 web/tsconfig.tsbuildinfo
 src/knowledge_assistant/static/
 
+# launcher build artefacts
+launcher/python/
+launcher/node_modules/
+
 # personal notes, never committed
 private/
 

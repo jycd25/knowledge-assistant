@@ -1,0 +1,30 @@
+{
+  "name": "knowledge-assistant",
+  "version": "0.1.0",
+  "description": "Local-first personal knowledge base: PDF import, hybrid search, RAG Q&A, notes. Runs entirely on your machine.",
+  "license": "MIT",
+  "bin": {
+    "knowledge-assistant": "bin/ka.js",
+    "ka": "bin/ka.js"
+  },
+  "files": [
+    "bin",
+    "python/*.whl",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "knowledge-base",
+    "rag",
+    "local-first",
+    "sqlite",
+    "vector-search",
+    "pdf"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jycd25/knowledge-assistant"
+  }
+}
