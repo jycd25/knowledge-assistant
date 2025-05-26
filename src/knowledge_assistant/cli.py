@@ -1,4 +1,4 @@
-"""`ka` command line."""
+"""`ka` command line. `ka serve` is what the npm launcher runs."""
 
 from __future__ import annotations
 
