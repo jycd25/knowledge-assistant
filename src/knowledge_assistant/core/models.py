@@ -49,6 +49,8 @@ class Entry(Base):
     title: Mapped[str] = mapped_column(String(500))
     content: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(50), default="manual")  # manual | pdf | note | email
+    # stable external id (e.g. email Message-ID) so re-syncing a source never duplicates entries
+    source_ref: Mapped[str | None] = mapped_column(String(500), nullable=True, unique=True)
     tags: Mapped[list[str]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
