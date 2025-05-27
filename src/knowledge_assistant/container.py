@@ -40,10 +40,16 @@ class Container:
         llm = llm or make_provider(settings)
         queue = JobQueue(sf, max_attempts=settings.job_max_attempts)
         worker = Worker(queue, threads=settings.worker_threads)
-        h = Handlers(sf, embedder, settings.chunk_tokens, settings.chunk_overlap_tokens)
+        mailbox_factory = None
+        if settings.email_configured:
+            from .core.email_source import ImapMailbox
+
+            mailbox_factory = lambda: ImapMailbox(settings.imap_host, settings.imap_user, settings.imap_password, settings.imap_port)  # noqa: E731
+        h = Handlers(sf, embedder, settings.chunk_tokens, settings.chunk_overlap_tokens, mailbox_factory=mailbox_factory)
         worker.register("ingest_text", h.ingest_text)
         worker.register("ingest_pdf", h.ingest_pdf)
         worker.register("reindex_entry", h.reindex_entry)
+        worker.register("sync_email", h.sync_email)
         return cls(settings, engine, sf, embedder, llm, queue, worker)
 
     def start(self) -> None:
