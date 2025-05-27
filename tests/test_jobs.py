@@ -96,3 +96,52 @@ def test_ingest_pdf_bad_file_fails_cleanly(engine, embedder, tmp_path):
     w.run_one()
     j = q.get(jid)
     assert j.status == "failed" and "extraction failed" in j.error.lower()
+
+
+def _email_bytes(mid, subject, body):
+    from email.message import EmailMessage
+    m = EmailMessage(); m["From"] = "a@b.c"; m["Subject"] = subject; m["Message-ID"] = mid; m.set_content(body)
+    return m.as_bytes()
+
+
+def test_sync_email_creates_entries_dedupes_and_resumes(engine, embedder):
+    from knowledge_assistant.core.email_source import FakeMailbox
+    from knowledge_assistant.core.repositories import SettingRepository
+    box = FakeMailbox({"INBOX": {
+        10: _email_bytes("<a@x>", "Invoice March", "Please find the invoice attached. Total 120 EUR."),
+        11: _email_bytes("<b@x>", "Lunch", "Lunch at noon tomorrow? " * 5),
+        12: _email_bytes("<c@x>", "Empty", "   "),
+    }})
+    sf = make_session_factory(engine)
+    q = JobQueue(sf, max_attempts=1)
+    w = Worker(q, threads=1, poll_interval=0.01)
+    h = Handlers(sf, embedder, 64, 8, mailbox_factory=lambda: box)
+    w.register("sync_email", h.sync_email)
+
+    jid = q.enqueue("sync_email", {"folder": "INBOX"})
+    assert w.run_one()
+    j = q.get(jid)
+    assert j.status == "done", j.error
+    assert j.result == {"new": 2, "skipped": 1, "last_uid": 12}
+    with sf() as s:
+        assert s.scalar(text("select count(*) from entries where source='email'")) == 2
+        assert s.scalar(text("select title from entries where source_ref='<a@x>'")) == "Invoice March"
+        assert SettingRepository(s).get("email:last_uid:INBOX") == "12"
+
+    # second sync: nothing new, and an old message re-appearing (same Message-ID, new UID) is skipped
+    box.messages["INBOX"][13] = _email_bytes("<a@x>", "Invoice March (fwd)", "duplicate")
+    jid2 = q.enqueue("sync_email", {"folder": "INBOX"})
+    w.run_one()
+    assert q.get(jid2).result == {"new": 0, "skipped": 1, "last_uid": 13}
+    with sf() as s:
+        assert s.scalar(text("select count(*) from entries")) == 2
+
+
+def test_sync_email_without_config_fails_clearly(engine, embedder):
+    sf = make_session_factory(engine)
+    q = JobQueue(sf, max_attempts=1)
+    w = Worker(q, threads=1)
+    w.register("sync_email", Handlers(sf, embedder, 64, 8).sync_email)
+    jid = q.enqueue("sync_email", {})
+    w.run_one()
+    assert q.get(jid).status == "failed" and "KA_IMAP_HOST" in q.get(jid).error

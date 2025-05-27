@@ -72,7 +72,8 @@ def settings(s: Session = Depends(get_session), c: Container = Depends(get_conta
     return SettingsOut(llm_provider=c.llm.name, llm_model=c.llm.model, llm_available=c.llm.is_available(),
                        embedding_model=st.embedding_model, embedding_dim=st.embedding_dim, data_dir=str(st.data_dir),
                        entry_count=s.scalar(select(func.count()).select_from(Entry)) or 0,
-                       chunk_count=s.scalar(select(func.count()).select_from(Chunk)) or 0)
+                       chunk_count=s.scalar(select(func.count()).select_from(Chunk)) or 0,
+                       email_configured=st.email_configured, email_account=st.imap_user if st.email_configured else None)
 
 
 @router.get("/health", response_model=HealthOut)

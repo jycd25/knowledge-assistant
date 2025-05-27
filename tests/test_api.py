@@ -115,3 +115,9 @@ def test_ask_without_llm_streams_sources_then_error_event(tmp_path):
         assert "event: sources" in body and "Coffee" in body
         assert "event: error" in body and "KA_LLM_PROVIDER" in body
         assert "event: done" not in body
+
+
+def test_sync_email_endpoint_requires_config(client):
+    r = client.post("/api/v1/jobs/sync-email", json={})
+    assert r.status_code == 409 and "KA_IMAP_HOST" in r.json()["detail"]
+    assert client.get("/api/v1/settings").json()["email_configured"] is False

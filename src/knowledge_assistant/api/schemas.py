@@ -124,6 +124,13 @@ class IngestTextRequest(BaseModel):
     tags: list[str] = []
 
 
+class SyncEmailRequest(BaseModel):
+    folder: str | None = None
+    topic_id: str | None = None
+    tags: list[str] = []
+    limit: int = Field(default=200, ge=1, le=2000)
+
+
 class NoteIn(BaseModel):
     title: str = ""
     body: str = Field(min_length=1)
@@ -215,6 +222,8 @@ class SettingsOut(BaseModel):
     data_dir: str
     entry_count: int
     chunk_count: int
+    email_configured: bool
+    email_account: str | None
 
 
 class HealthOut(BaseModel):
