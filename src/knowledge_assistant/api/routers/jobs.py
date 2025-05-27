@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from ...container import Container
 from ...core.repositories import JobRepository
 from ..deps import get_container, get_session
-from ..schemas import IngestTextRequest, JobOut
+from ..schemas import IngestTextRequest, JobOut, SyncEmailRequest
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 MAX_PDF_BYTES = 200 * 1024 * 1024
@@ -24,6 +24,8 @@ def _label(j) -> str:
         return p.get("original_name") or p.get("title") or "PDF"
     if j.kind == "ingest_text":
         return p.get("title") or "Text"
+    if j.kind == "sync_email":
+        return f"Email · {p.get('folder', 'INBOX')}"
     return j.kind
 
 
@@ -66,6 +68,16 @@ async def ingest_pdf(file: UploadFile = File(...), title: str | None = Form(None
     payload = {"path": str(dest), "title": title or file.filename.rsplit(".", 1)[0], "topic_id": topic_id,
                "tags": [t.strip() for t in tags.split(",") if t.strip()], "original_name": file.filename}
     jid = c.queue.enqueue("ingest_pdf", payload)
+    return _out(c.queue.get(jid))
+
+
+@router.post("/sync-email", response_model=JobOut, status_code=status.HTTP_202_ACCEPTED)
+def sync_email(body: SyncEmailRequest, c: Container = Depends(get_container)):
+    if not c.settings.email_configured:
+        raise HTTPException(409, "Email is not configured. Set KA_IMAP_HOST, KA_IMAP_USER and KA_IMAP_PASSWORD, then restart.")
+    payload = {"folder": body.folder or c.settings.imap_folder, "topic_id": body.topic_id, "tags": body.tags or ["email"],
+               "limit": min(body.limit, c.settings.imap_max_per_sync)}
+    jid = c.queue.enqueue("sync_email", payload)
     return _out(c.queue.get(jid))
 
 
