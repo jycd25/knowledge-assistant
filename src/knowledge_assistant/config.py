@@ -31,8 +31,20 @@ class Settings(BaseSettings):
     chunk_tokens: int = 512
     chunk_overlap_tokens: int = 64
 
+    # Email source (IMAP). Unset host = feature off.
+    imap_host: str | None = None
+    imap_port: int = 993
+    imap_user: str | None = None
+    imap_password: str | None = None
+    imap_folder: str = "INBOX"
+    imap_max_per_sync: int = 200
+
     worker_threads: int = 2
     job_max_attempts: int = 3
+
+    @property
+    def email_configured(self) -> bool:
+        return bool(self.imap_host and self.imap_user and self.imap_password)
 
     @property
     def db_path(self) -> Path:

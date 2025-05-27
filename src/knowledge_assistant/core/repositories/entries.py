@@ -41,15 +41,18 @@ class EntryRepository:
             q = q.join(Topic).where(Topic.category_id == category_id)
         return list(self.s.scalars(q))
 
+    def get_by_source_ref(self, source_ref: str) -> Entry | None:
+        return self.s.scalar(select(Entry).where(Entry.source_ref == source_ref))
+
     def count(self) -> int:
         return self.s.scalar(select(func.count()).select_from(Entry)) or 0
 
     # -- writes --------------------------------------------------------------
     def create(self, *, title: str, content: str, topic_id: str | None = None, source: str = "manual",
-               tags: list[str] | None = None, embed: bool = True) -> Entry:
+               tags: list[str] | None = None, embed: bool = True, source_ref: str | None = None) -> Entry:
         if topic_id is not None and self.s.get(Topic, topic_id) is None:
             raise NotFoundError(f"topic {topic_id} not found")
-        entry = Entry(title=title.strip(), content=content, topic_id=topic_id, source=source, tags=tags or [])
+        entry = Entry(title=title.strip(), content=content, topic_id=topic_id, source=source, tags=tags or [], source_ref=source_ref)
         self.s.add(entry)
         self.s.flush()
         if embed:
