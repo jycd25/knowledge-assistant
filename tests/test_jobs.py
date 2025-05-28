@@ -4,13 +4,14 @@ import pymupdf
 from sqlalchemy import text
 
 from knowledge_assistant.core.db import make_session_factory
+from knowledge_assistant.core.models import utcnow
 from knowledge_assistant.jobs import JobQueue, Worker
 from knowledge_assistant.jobs.handlers import Handlers
 
 
 def _make(engine, embedder, threads=1, max_attempts=3):
     sf = make_session_factory(engine)
-    q = JobQueue(sf, max_attempts=max_attempts)
+    q = JobQueue(sf, max_attempts=max_attempts, stale_after_s=1)
     w = Worker(q, threads=threads, poll_interval=0.01)
     h = Handlers(sf, embedder, chunk_tokens=64, overlap_tokens=8)
     w.register("ingest_text", h.ingest_text)
@@ -69,6 +70,17 @@ def test_claim_is_atomic_across_threads(engine, embedder):
         time.sleep(0.02)
     w.stop()
     assert sorted(seen) == sorted(ids)  # every job exactly once
+
+
+def test_stale_running_jobs_are_reclaimed_on_start(engine, embedder):
+    sf, q, w = _make(engine, embedder, max_attempts=3)
+    jid = q.enqueue("ingest_text", {"title": "x", "content": "y"})
+    dead = q.enqueue("ingest_text", {"title": "x", "content": "y"})
+    with sf() as s, s.begin():
+        s.execute(text("update jobs set status='running', attempts=3, heartbeat_at=:h where id=:i"), {"h": utcnow().replace(year=2000), "i": dead})
+        s.execute(text("update jobs set status='running', attempts=1, heartbeat_at=:h where id=:i"), {"h": utcnow().replace(year=2000), "i": jid})
+    assert q.reclaim_stale() == 2
+    assert q.get(jid).status == "queued" and q.get(dead).status == "failed"
 
 
 def test_ingest_pdf_job_uses_subprocess(engine, embedder, tmp_path):

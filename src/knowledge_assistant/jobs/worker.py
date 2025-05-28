@@ -30,6 +30,7 @@ class Worker:
         self._handlers[kind] = handler
 
     def start(self) -> None:
+        self.queue.reclaim_stale()
         self._stop.clear()
         for i in range(self.threads):
             t = threading.Thread(target=self._loop, name=f"ka-worker-{i}", daemon=True)

@@ -4,10 +4,13 @@ This is the producer/consumer contract for all slow work. Producers call `enqueu
 the Worker claims rows with a single atomic UPDATE so two threads can never take the
 same job. Swapping in Redis/huey later means re-implementing this class only.
 
-Lifecycle: queued -> running -> done | failed.
+Lifecycle: queued -> running -> done | failed.  A running job with a stale heartbeat
+(process died mid-job) is reclaimed on startup: re-queued while attempts remain, else failed.
 """
 
 from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
@@ -16,9 +19,10 @@ from ..core.models import Job, utcnow
 
 
 class JobQueue:
-    def __init__(self, session_factory: sessionmaker[Session], max_attempts: int = 3):
+    def __init__(self, session_factory: sessionmaker[Session], max_attempts: int = 3, stale_after_s: int = 300):
         self.sf = session_factory
         self.max_attempts = max_attempts
+        self.stale_after = timedelta(seconds=stale_after_s)
 
     # -- producer side ---------------------------------------------------------
     def enqueue(self, kind: str, payload: dict | None = None) -> str:
@@ -74,3 +78,17 @@ class JobQueue:
                 job.status, job.message, job.error = "queued", f"retrying after error (attempt {job.attempts})", error
             else:
                 job.status, job.error, job.finished_at = "failed", error, utcnow()
+
+    def reclaim_stale(self) -> int:
+        """Called at startup: jobs left 'running' by a dead process get re-queued or failed."""
+        cutoff = utcnow() - self.stale_after
+        with self.sf() as s, s.begin():
+            stale = s.execute(text("SELECT id, attempts FROM jobs WHERE status='running' AND (heartbeat_at IS NULL OR heartbeat_at < :c)"),
+                              {"c": cutoff}).fetchall()
+            for job_id, attempts in stale:
+                if attempts < self.max_attempts:
+                    s.execute(text("UPDATE jobs SET status='queued', message='recovered after restart' WHERE id=:id"), {"id": job_id})
+                else:
+                    s.execute(text("UPDATE jobs SET status='failed', error='abandoned after restart', finished_at=:f WHERE id=:id"),
+                              {"id": job_id, "f": utcnow()})
+            return len(stale)
