@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { FileUp } from "lucide-react";
+import { FileUp, Mail } from "lucide-react";
 import { api } from "../lib/api";
 import type { Job } from "../lib/types";
 import { Empty, ErrorNote, PageHeader, ScopePicker, fmtDate } from "../components/ui";
@@ -14,6 +14,7 @@ export default function ImportPage() {
   const [drag, setDrag] = useState(false);
   const [text, setText] = useState({ title: "", content: "" });
   const fileInput = useRef<HTMLInputElement>(null);
+  const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings });
   const jobs = useQuery({ queryKey: ["jobs"], queryFn: api.jobs, refetchInterval: (q) => q.state.data?.some((j) => j.status === "queued" || j.status === "running") ? 1500 : false });
   const activeCount = jobs.data?.filter((j) => j.status === "queued" || j.status === "running").length ?? 0;
   const prevActive = useRef(activeCount);
@@ -25,6 +26,7 @@ export default function ImportPage() {
     mutationFn: async (files: File[]) => { for (const f of files) await api.ingestPdf(f, { topic_id: topic, tags }); },
     onSuccess: refresh,
   });
+  const syncEmail = useMutation({ mutationFn: () => api.syncEmail({ topic_id: topic, tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined }), onSuccess: refresh });
   const paste = useMutation({
     mutationFn: () => api.ingestText({ title: text.title, content: text.content, topic_id: topic, tags: tags.split(",").map((t) => t.trim()).filter(Boolean) }),
     onSuccess: () => { setText({ title: "", content: "" }); refresh(); },
@@ -55,6 +57,18 @@ export default function ImportPage() {
             <ErrorNote error={paste.error} />
           </form>
           <div className="card flex flex-col gap-2 p-4">
+            <div className="eyebrow">email</div>
+            {settings.data?.email_configured ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 text-[13px]"><div className="truncate font-medium">{settings.data.email_account}</div><div className="text-muted">New messages become entries. Already-seen messages are skipped.</div></div>
+                <button className="btn-quiet shrink-0" disabled={syncEmail.isPending} onClick={() => syncEmail.mutate()}><Mail size={14} />Sync inbox</button>
+              </div>
+            ) : (
+              <p className="text-[13px] text-muted">Not connected. Set <code className="font-mono">KA_IMAP_HOST</code>, <code className="font-mono">KA_IMAP_USER</code> and <code className="font-mono">KA_IMAP_PASSWORD</code> before starting to sync a mailbox here.</p>
+            )}
+            <ErrorNote error={syncEmail.error} />
+          </div>
+          <div className="card flex flex-col gap-2 p-4">
             <div className="eyebrow">file under</div>
             <ScopePicker categoryId={cat} topicId={topic} onChange={(c, t) => { setCat(c); setTopic(t); }} />
             <input className="field" placeholder="Tags for these imports, comma separated" value={tags} onChange={(e) => setTags(e.target.value)} />
@@ -71,7 +85,7 @@ export default function ImportPage() {
 }
 
 function JobRow({ job }: { job: Job }) {
-  const p = job.result as { entry_id?: string; chunks?: number };
+  const p = job.result as { entry_id?: string; chunks?: number; new?: number };
   const active = job.status === "queued" || job.status === "running";
   return (
     <li className="card p-3">
@@ -89,7 +103,7 @@ function JobRow({ job }: { job: Job }) {
       )}
       {job.status === "done" && (
         <div className="mt-1 text-[12px] text-muted">
-          {p.chunks ?? 0} passages indexed · {fmtDate(job.finished_at ?? job.created_at)}
+          {job.kind === "sync_email" ? `${p.new ?? 0} new messages` : `${p.chunks ?? 0} passages indexed`} · {fmtDate(job.finished_at ?? job.created_at)}
         </div>
       )}
       {job.status === "failed" && <div className="mt-1 whitespace-pre-wrap text-[12px] text-stamp">{job.error?.split("\n")[0]}</div>}

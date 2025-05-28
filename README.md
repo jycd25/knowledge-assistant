@@ -21,6 +21,7 @@ That installs a private Python environment on first run, downloads a small embed
 - **Ask** — answers stream in with `[n]` citations that link to the exact passages used.
 - **Library** — organise entries into categories and topics. Edits re-index automatically.
 - **Notes** — write, tidy into a structured note (rule-based or AI), promote to the library.
+- **Email** — sync a mailbox over IMAP; each message becomes a searchable entry, deduplicated by Message-ID, resumable by UID.
 - **Templates** — five built-in structures plus your own.
 - **Preferences** — describe how you like notes formatted in plain language.
 
@@ -53,6 +54,9 @@ Environment variables (or a `.env` file in the working directory), all prefixed 
 | `KA_CHUNK_TOKENS` | `512` | Passage size |
 | `KA_SEARCH_MAX_DISTANCE` | `0.45` | Vector cutoff (cosine distance); re-tune if you change the embedding model |
 | `KA_WORKER_THREADS` | `2` | Background import workers |
+| `KA_IMAP_HOST` / `KA_IMAP_USER` / `KA_IMAP_PASSWORD` | | Set all three to enable the email source (Gmail: use an app password) |
+| `KA_IMAP_FOLDER` | `INBOX` | Folder to sync |
+| `KA_IMAP_MAX_PER_SYNC` | `200` | Cap per sync run |
 
 ## CLI
 
