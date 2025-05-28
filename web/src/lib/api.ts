@@ -46,6 +46,7 @@ export const api = {
   jobs: () => request<T.Job[]>("/jobs"),
   job: (id: string) => request<T.Job>(`/jobs/${id}`),
   ingestText: (b: { title: string; content: string; topic_id?: string | null; tags?: string[] }) => request<T.Job>("/jobs/ingest-text", { method: "POST", body: json(b) }),
+  syncEmail: (b: { folder?: string; topic_id?: string | null; tags?: string[] } = {}) => request<T.Job>("/jobs/sync-email", { method: "POST", body: json(b) }),
   ingestPdf: async (file: File, opts: { title?: string; topic_id?: string | null; tags?: string } = {}) => {
     const fd = new FormData();
     fd.append("file", file);
