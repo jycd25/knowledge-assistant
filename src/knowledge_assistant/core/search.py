@@ -71,7 +71,7 @@ class HybridSearch:
             LIMIT :k
         """
         qvec = serialize_float32(self.embedder.embed_query(query))
-        rows = self.s.execute(text(sql), {"qvec": qvec, "kk": k * 4, "k": k, "maxd": max_distance, **params})
+        rows = self.s.execute(text(sql), {"qvec": qvec, "kk": k * 4 if scope else k, "k": k, "maxd": max_distance, **params})
         return [r[0] for r in rows]
 
     def keyword_ranks(self, query: str, k: int, category_id=None, topic_id=None) -> list[str]:
