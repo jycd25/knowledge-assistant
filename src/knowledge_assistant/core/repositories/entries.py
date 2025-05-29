@@ -102,10 +102,11 @@ class EntryRepository:
             return 0
         # title gives short chunks more context for retrieval
         vectors = self.embedder.embed([f"{entry.title}\n{p.text}" for p in pieces])
-        for p, v in zip(pieces, vectors):
-            c = Chunk(id=new_id(), entry_id=entry.id, ord=p.ord, text=p.text, token_count=p.token_count)
-            self.s.add(c)
-            self.s.flush()
-            self.s.execute(text("INSERT INTO chunks_vec(chunk_id, embedding) VALUES (:cid, :vec)"),
-                           {"cid": c.id, "vec": serialize_float32(v)})
+        chunks = [Chunk(id=new_id(), entry_id=entry.id, ord=p.ord, text=p.text, token_count=p.token_count) for p in pieces]
+        self.s.add_all(chunks)
+        self.s.flush()  # one round-trip for all chunk rows (FTS triggers fire here)
+        self.s.execute(
+            text("INSERT INTO chunks_vec(chunk_id, embedding) VALUES (:cid, :vec)"),
+            [{"cid": c.id, "vec": serialize_float32(v)} for c, v in zip(chunks, vectors)],
+        )
         return len(pieces)
