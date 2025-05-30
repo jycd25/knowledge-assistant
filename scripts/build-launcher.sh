@@ -7,4 +7,4 @@ rm -rf launcher/python dist && mkdir -p launcher/python
 .venv/bin/pip wheel . --no-deps -w launcher/python -q
 cp README.md launcher/README.md
 echo "launcher ready:"; ls -la launcher/python
-echo "publish with: (cd launcher && npm publish)"
+echo "run locally with: node launcher/bin/ka.js  (package is marked private; not published)"
