@@ -1,5 +1,6 @@
 {
   "name": "knowledge-assistant",
+  "private": true,
   "version": "0.1.0",
   "description": "Local-first personal knowledge base: PDF import, hybrid search, RAG Q&A, notes. Runs entirely on your machine.",
   "license": "MIT",
