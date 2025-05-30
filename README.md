@@ -6,11 +6,11 @@ your machine. Indexing and search never touch the network; an LLM (local Ollama 
 API) is only needed for answers and AI note tidying.
 
 ```
-npx knowledge-assistant
+node launcher/bin/ka.js
 ```
 
 That installs a private Python environment on first run, downloads a small embedding model
-(~130 MB), and opens the app in your browser.
+(~130 MB), and opens the app in your browser. The launcher is not published to npm.
 
 ## Features
 
@@ -109,8 +109,8 @@ cd web && npm install && npm run dev      # UI with API proxy to :8765
 ka serve                                   # in another terminal
 ```
 
-Release: `cd web && npm run build`, then `./scripts/build-launcher.sh` to produce the wheel and
-stage it in `launcher/`, then `cd launcher && npm publish`.
+Build for local use: `cd web && npm run build`, then `./scripts/build-launcher.sh` to produce
+the wheel and stage it in `launcher/` for the Node launcher.
 
 ## License
 
