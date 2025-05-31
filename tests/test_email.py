@@ -32,6 +32,14 @@ def test_html_only_is_converted_and_scripts_dropped():
     assert html_to_text("<div>a</div><div>b</div>") == "a\nb"
 
 
+def test_encoded_subject_and_missing_message_id():
+    m = EmailMessage()
+    m["Subject"] = "=?utf-8?b?w4TDtsO8?="  # "Äöü"
+    m.set_content("x")
+    d = parse_email(9, m.as_bytes())
+    assert d.subject == "Äöü" and d.message_id == "<uid-9>"
+
+
 def test_fake_mailbox_uids_after():
     mb = FakeMailbox({"INBOX": {3: b"", 5: b"", 9: b""}})
     assert mb.uids_after("INBOX", 4) == [5, 9] and mb.uids_after("INBOX", 9) == []
