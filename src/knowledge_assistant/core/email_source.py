@@ -11,6 +11,7 @@ import email
 import imaplib
 import re
 from dataclasses import dataclass, field
+from email.header import decode_header, make_header
 from email.message import Message
 from html.parser import HTMLParser
 from typing import Protocol
@@ -104,6 +105,15 @@ def html_to_text(html: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "".join(p.parts)).strip()
 
 
+def _decode(value: str | None) -> str:
+    if not value:
+        return ""
+    try:
+        return str(make_header(decode_header(value)))
+    except Exception:
+        return value
+
+
 def _body(msg: Message) -> str:
     plain, html = [], []
     for part in msg.walk():
@@ -129,8 +139,8 @@ def parse_email(uid: int, raw: bytes) -> EmailDoc:
     return EmailDoc(
         uid=uid,
         message_id=(msg.get("Message-ID") or f"<uid-{uid}>").strip(),
-        subject=msg.get("Subject") or "",
-        sender=msg.get("From") or "",
+        subject=_decode(msg.get("Subject")),
+        sender=_decode(msg.get("From")),
         date=msg.get("Date", ""),
         text=_body(msg),
     )
