@@ -6,11 +6,12 @@ your machine. Indexing and search never touch the network; an LLM (local Ollama 
 API) is only needed for answers and AI note tidying.
 
 ```
-node launcher/bin/ka.js
+npx knowledge-assistant
 ```
 
 That installs a private Python environment on first run, downloads a small embedding model
-(~130 MB), and opens the app in your browser. The launcher is not published to npm.
+(~130 MB), and opens the app in your browser. Or install it globally with
+`npm i -g knowledge-assistant` and run `ka`.
 
 ## Features
 
@@ -24,6 +25,20 @@ That installs a private Python environment on first run, downloads a small embed
 - **Email** — sync a mailbox over IMAP; each message becomes a searchable entry, deduplicated by Message-ID, resumable by UID.
 - **Templates** — five built-in structures plus your own.
 - **Preferences** — describe how you like notes formatted in plain language.
+
+## How answers are generated (RAG)
+
+The **Ask** feature is a retrieval-augmented generation (RAG) pipeline, and it runs the same
+retrieval stack as search. Every imported document is split into sentence-aware chunks of about
+512 tokens with a 64-token overlap, and each chunk is embedded locally with a small ONNX model
+(bge-small via fastembed). When you ask a question, the query is embedded and matched against
+those vectors with sqlite-vec, in parallel with a BM25 keyword search over the same chunks in
+FTS5. The two ranked lists are merged with reciprocal rank fusion, and the top six passages are
+handed to the LLM as numbered context. The system prompt restricts the model to that context and
+asks it to cite passages inline as `[n]`, so every claim in an answer links back to the exact
+text it came from, and the model is told to say so rather than guess when the context has no
+answer. Retrieval, embedding and indexing never leave your machine; only the final generation
+step calls an LLM, which can itself be local via Ollama.
 
 ## Requirements
 
@@ -109,8 +124,17 @@ cd web && npm install && npm run dev      # UI with API proxy to :8765
 ka serve                                   # in another terminal
 ```
 
-Build for local use: `cd web && npm run build`, then `./scripts/build-launcher.sh` to produce
-the wheel and stage it in `launcher/` for the Node launcher.
+## Releasing
+
+Bump `version` in both `pyproject.toml` and `launcher/package.json` (they must match: the
+launcher installs the wheel whose version equals its own), then:
+
+```bash
+./scripts/build-launcher.sh      # builds the UI, the wheel, and stages it in launcher/
+cd launcher && npm publish
+```
+
+The npm package bundles the wheel, so users never need PyPI.
 
 ## License
 

@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 (cd web && npm run build)
 rm -rf launcher/python dist && mkdir -p launcher/python
 .venv/bin/pip wheel . --no-deps -w launcher/python -q
-cp README.md launcher/README.md
+cp README.md LICENSE launcher/
 echo "launcher ready:"; ls -la launcher/python
-echo "run locally with: node launcher/bin/ka.js  (package is marked private; not published)"
+echo "run locally with: node launcher/bin/ka.js"
+echo "publish with:     cd launcher && npm publish"

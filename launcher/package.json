@@ -1,8 +1,7 @@
 {
   "name": "knowledge-assistant",
-  "private": true,
-  "version": "0.1.0",
-  "description": "Local-first personal knowledge base: PDF import, hybrid search, RAG Q&A, notes. Runs entirely on your machine.",
+  "version": "0.1.1",
+  "description": "Local-first personal knowledge base with RAG: import PDFs, notes and email, hybrid vector + keyword search, and cited Q&A over your own documents. Runs entirely on your machine.",
   "license": "MIT",
   "bin": {
     "knowledge-assistant": "bin/ka.js",
@@ -11,7 +10,8 @@
   "files": [
     "bin",
     "python/*.whl",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18"
@@ -19,16 +19,24 @@
   "keywords": [
     "knowledge-base",
     "rag",
+    "retrieval-augmented-generation",
     "local-first",
     "sqlite",
     "vector-search",
-    "pdf"
+    "hybrid-search",
+    "embeddings",
+    "pdf",
+    "notes"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/jycd25/knowledge-assistant"
   },
+  "homepage": "https://github.com/jycd25/knowledge-assistant#readme",
+  "bugs": {
+    "url": "https://github.com/jycd25/knowledge-assistant/issues"
+  },
   "publishConfig": {
-    "registry": "http://127.0.0.1:1/never-publish/"
+    "access": "public"
   }
 }

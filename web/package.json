@@ -27,5 +27,9 @@
     "typescript": "5.8.3",
     "vite": "6.3.5",
     "vitest": "3.1.4"
+  },
+  "allowScripts": {
+    "@tailwindcss/oxide@4.1.8": true,
+    "esbuild@0.25.12": true
   }
 }

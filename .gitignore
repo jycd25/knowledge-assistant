@@ -33,3 +33,7 @@ private/
 
 # personal notes, never committed
 private/
+
+# staged copies for npm publish
+launcher/README.md
+launcher/LICENSE
