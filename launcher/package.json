@@ -1,6 +1,6 @@
 {
   "name": "knowledge-assistant",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local-first personal knowledge base with RAG: import PDFs, notes and email, hybrid vector + keyword search, and cited Q&A over your own documents. Runs entirely on your machine.",
   "license": "MIT",
   "bin": {
